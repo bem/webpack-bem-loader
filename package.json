@@ -1,7 +1,6 @@
 {
   "name": "webpack-bem-loader",
   "version": "0.0.1",
-  "private": true,
   "description": "Webpack BEM loader",
   "repository": {
     "type": "git",
