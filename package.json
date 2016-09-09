@@ -1,0 +1,21 @@
+{
+  "name": "webpack-bem-loader",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Webpack BEM loader",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/bem/webpack-bem-loader.git"
+  },
+  "keywords": [
+    "bem",
+    "webpack"
+  ],
+  "license": "MPL-2.0",
+  "dependencies": {
+    "vow": "^0.4.12",
+    "vow-fs": "^0.3.5",
+    "bem-naming": "^1.0.1",
+    "falafel": "^1.2.0"
+  }
+}
