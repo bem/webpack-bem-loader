@@ -82,12 +82,14 @@ function parseEntityImport(entityImport, ctx) {
         if(!i) {
             main.block = type === 'b'? tail : ctx.block;
             main.elem = type === 'e'? tail : ctx.elem;
+        } else if(type === 'e') {
+            main.elem = tail;
         }
 
         switch(type) {
             case 'b':
             case 'e':
-                res.push(main);
+                res.length || res.push(main);
             break;
 
             case 'm':
