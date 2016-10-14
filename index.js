@@ -1,10 +1,11 @@
 'use strict';
 
 const path = require('path'),
-    bemNaming = require('bem-naming')({ elem : '-' }),
+    bn = require('bem-naming'),
     falafel = require('falafel'),
     vow = require('vow'),
     vowFs = require('vow-fs'),
+    defaultNaming = { elem : '-', elemDirPrefix: '', modDirPrefix: '_' },
     isFileJsModule = file => path.extname(file) === '.js';
 
 module.exports = function(source) {
@@ -15,6 +16,22 @@ module.exports = function(source) {
         levels = options.levels,
         techs = options.techs,
         allPromises = [],
+        namingOptions = Object.assign(defaultNaming, options.naming),
+        bemNaming = bn(namingOptions),
+        getEntityFiles = entity => {
+            const prefixes = levels.map(level => path.resolve(
+                process.cwd(), // TODO: use proper relative resolving
+                path.join(
+                    level,
+                    entity.block,
+                    entity.elem? `${namingOptions.elemDirPrefix}${entity.elem}` : '',
+                    entity.modName? `${namingOptions.modDirPrefix}${entity.modName}` : '',
+                    bn.stringify(entity))));
+
+            return techs.reduce((res, tech) =>
+                res.concat(prefixes.map(prefix => `${prefix}.${tech}`)),
+                []);
+        },
         result = falafel(source, node => {
             if(
                 node.type === 'CallExpression' &&
@@ -109,19 +126,4 @@ function parseEntityImport(entityImport, ctx) {
     });
 
     return res;
-}
-
-function getEntityFiles(entity, levels, techs) {
-    const prefixes = levels.map(level => path.resolve(
-        process.cwd(), // TODO: use proper relative resolving
-        path.join(
-            level,
-            entity.block,
-            entity.elem || '', // TODO: use level naming scheme https://github.com/bem/bem-react-core/issues/3
-            entity.modName? `_${entity.modName}` : '',
-            bemNaming.stringify(entity))));
-
-    return techs.reduce((res, tech) =>
-        res.concat(prefixes.map(prefix => prefix + '.' + tech)),
-        []);
 }
