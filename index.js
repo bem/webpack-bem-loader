@@ -26,7 +26,7 @@ module.exports = function(source) {
                     entity.block,
                     entity.elem? `${namingOptions.elemDirPrefix}${entity.elem}` : '',
                     entity.modName? `${namingOptions.modDirPrefix}${entity.modName}` : '',
-                    bn.stringify(entity))));
+                    bemNaming.stringify(entity))));
 
             return techs.reduce((res, tech) =>
                 res.concat(prefixes.map(prefix => `${prefix}.${tech}`)),
@@ -98,7 +98,7 @@ function parseEntityImport(entityImport, ctx) {
 
         if(!i) {
             main.block = type === 'b'? tail : ctx.block;
-            main.elem = type === 'e'? tail : ctx.elem;
+            type === 'e' && (main.elem = tail);
         } else if(type === 'e') {
             main.elem = tail;
         }
@@ -113,6 +113,8 @@ function parseEntityImport(entityImport, ctx) {
                 const splitMod = tail.split('='),
                     modName = splitMod[0],
                     modVals = splitMod[1];
+
+                main.elem || (main.elem = ctx.elem);
 
                 if(modVals) {
                     modVals.split('|').forEach(modVal => {
