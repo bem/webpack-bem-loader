@@ -37,6 +37,7 @@ module.exports = function(source) {
                 node.type === 'CallExpression' &&
                 node.callee.type === 'Identifier' &&
                 node.callee.name === 'require' &&
+                node.arguments[0] && node.arguments[0].value &&
                 node.arguments[0].value.match(/^(b|e|m)\:/)
             ) {
                 let requireIdx = null;
@@ -72,10 +73,8 @@ module.exports = function(source) {
                             return res.concat(entity.requires);
                         }, []);
 
-                        node.update(
-                            `[${requires.join(',')}]` +
-                            (requireIdx !== null? `[${requireIdx}].default.applyDecls()` : '')
-                        );
+                        const n = `[${requires.join(',')}]` + (requireIdx !== null? `[${requireIdx}]` : '');
+                        node.update((n && requireIdx !== null) ? `(${n}.default ? ${n}.default.applyDecls() : ${n}.applyDecls())` : n);
                     }));
             }
         });
