@@ -116,12 +116,12 @@ function parseEntityImport(entityImport, ctx) {
 
                 main.elem || (main.elem = ctx.elem);
 
+                res.push(Object.assign({}, main, { modName }));
+
                 if(modVals) {
                     modVals.split('|').forEach(modVal => {
                         res.push(Object.assign({}, main, { modName, modVal }));
                     });
-                } else {
-                    res.push(Object.assign({}, main, { modName }));
                 }
             break;
         }
