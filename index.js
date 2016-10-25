@@ -73,8 +73,15 @@ module.exports = function(source) {
                             return res.concat(entity.requires);
                         }, []);
 
-                        const n = `[${requires.join(',')}]` + (requireIdx !== null? `[${requireIdx}]` : '');
-                        node.update((n && requireIdx !== null) ? `(${n}.default ? ${n}.default.applyDecls() : ${n}.applyDecls())` : n);
+
+                        const idx = requireIdx !== null;
+                            n = `[${requires.join(',')}]${idx? `[${requireIdx}]` : ''}`;
+
+                        node.update(idx? `
+                          (${n}.default?
+                              ${n}.default.applyDecls() :
+                              ${n}.applyDecls())
+                          ` : n);
                     }));
             }
         });
