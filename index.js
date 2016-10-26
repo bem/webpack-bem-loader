@@ -74,7 +74,7 @@ module.exports = function(source) {
                         }, []);
 
 
-                        const idx = requireIdx !== null;
+                        const idx = requireIdx !== null,
                             n = `[${requires.join(',')}]${idx? `[${requireIdx}]` : ''}`;
 
                         node.update(idx? `
@@ -120,7 +120,9 @@ function parseEntityImport(entityImport, ctx) {
                     modName = splitMod[0],
                     modVals = splitMod[1];
 
-                main.elem || (main.elem = ctx.elem);
+                if(main.block === ctx.block) {
+                    main.elem || (main.elem = ctx.elem);
+                }
 
                 res.push(Object.assign({}, main, { modName }));
 
