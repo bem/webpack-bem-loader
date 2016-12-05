@@ -66,7 +66,7 @@ module.exports = function(source) {
                 allPromises.push(vow.all(currentEntityRequires)
                     .then(currentEntityRequires => {
                         const requires = currentEntityRequires.reduce((res, entity) => {
-                            if(!entity.requires.length) {
+                            if(!entity.requires.length && !entity.entity.optional) {
                                 throw new Error(`No BEM entity: "${bemNaming.stringify(entity.entity)}"`);
                             }
 
@@ -124,9 +124,11 @@ function parseEntityImport(entityImport, ctx) {
                     main.elem || (main.elem = ctx.elem);
                 }
 
-                res.push(Object.assign({}, main, { modName }));
+                let resModName = Object.assign({}, main, { modName });
+                res.push(resModName);
 
                 if(modVals) {
+                    resModName.optional = true;
                     modVals.split('|').forEach(modVal => {
                         res.push(Object.assign({}, main, { modName, modVal }));
                     });
