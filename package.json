@@ -12,9 +12,10 @@
   ],
   "license": "MPL-2.0",
   "dependencies": {
-    "vow": "^0.4.12",
-    "vow-fs": "^0.3.5",
     "bem-naming": "^1.0.1",
-    "falafel": "^1.2.0"
+    "falafel": "^1.2.0",
+    "loader-utils": "^0.2.16",
+    "vow": "^0.4.12",
+    "vow-fs": "^0.3.5"
   }
 }
