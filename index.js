@@ -5,6 +5,7 @@ const path = require('path'),
     falafel = require('falafel'),
     vow = require('vow'),
     vowFs = require('vow-fs'),
+    loaderUtils = require('loader-utils'),
     defaultNaming = { elem : '-', elemDirPrefix: '', modDirPrefix: '_' },
     isFileJsModule = file => path.extname(file) === '.js';
 
@@ -12,7 +13,7 @@ module.exports = function(source) {
     this.cacheable && this.cacheable();
 
     const callback = this.async(),
-        options = this.options.bemLoader,
+        options = this.options.bemLoader || loaderUtils.parseQuery(this.query),
         levels = options.levels,
         techs = options.techs,
         allPromises = [],
