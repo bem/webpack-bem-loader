@@ -12,6 +12,9 @@
   ],
   "license": "MPL-2.0",
   "dependencies": {
+    "@bem/cell": "^0.2.1",
+    "@bem/entity-name": "^1.1.0",
+    "bem-fs-scheme": "github:bem-sdk/bem-fs-scheme#yeti-or.bem-react-core",
     "bem-naming": "^1.0.1",
     "falafel": "^1.2.0",
     "loader-utils": "^0.2.16",

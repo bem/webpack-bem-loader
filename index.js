@@ -2,37 +2,29 @@
 
 const path = require('path'),
     bn = require('bem-naming'),
+    BemCell = require('@bem/cell'),
+    BemEntityName = require('@bem/entity-name'),
+    bemFs = require('bem-fs-scheme')(),
+    defaultNaming = {
+        elem: '-',
+        wordPattern: '[a-zA-Z0-9]+',
+        elemDirDelim: ''
+    },
     falafel = require('falafel'),
     vow = require('vow'),
     vowFs = require('vow-fs'),
-    loaderUtils = require('loader-utils'),
-    defaultNaming = { elem : '-', elemDirPrefix: '', modDirPrefix: '_' },
     isFileJsModule = file => path.extname(file) === '.js';
 
 module.exports = function(source) {
     this.cacheable && this.cacheable();
 
     const callback = this.async(),
-        options = this.options.bemLoader || loaderUtils.parseQuery(this.query),
+        options = this.options.bemLoader,
         levels = options.levels,
         techs = options.techs,
         allPromises = [],
         namingOptions = Object.assign(defaultNaming, options.naming),
         bemNaming = bn(namingOptions),
-        getEntityFiles = entity => {
-            const prefixes = levels.map(level => path.resolve(
-                process.cwd(), // TODO: use proper relative resolving
-                path.join(
-                    level,
-                    entity.block,
-                    entity.elem? `${namingOptions.elemDirPrefix}${entity.elem}` : '',
-                    entity.modName? `${namingOptions.modDirPrefix}${entity.modName}` : '',
-                    bemNaming.stringify(entity))));
-
-            return techs.reduce((res, tech) =>
-                res.concat(prefixes.map(prefix => `${prefix}.${tech}`)),
-                []);
-        },
         result = falafel(source, node => {
             if(
                 node.type === 'CallExpression' &&
@@ -47,7 +39,21 @@ module.exports = function(source) {
                     node.arguments[0].value,
                     bemNaming.parse(path.basename(this.resourcePath).split('.')[0]))
                         .map(entity => {
-                            const entityFiles = getEntityFiles(entity, levels, techs);
+                            // collect fs path to each entity
+                            // if entity has tech get exactly it, otherwise use default techs
+                            const entityFiles = [].concat(entity.tech || techs).reduce((acc, tech) =>
+                                acc.concat(
+                                    // collect entites on all provided levels
+                                    levels.map(layer => {
+                                        const cell = new BemCell({entity: new BemEntityName(entity), tech, layer})
+                                        return path.resolve(process.cwd(), bemFs.path(cell, {
+                                            naming: namingOptions,
+                                            elemDirDelim: namingOptions.elemDirDelim,
+                                            modDirDelim: namingOptions.modDirDelim
+                                        }));
+                                    })
+                                )
+                            , []);
 
                             entityFiles.forEach(this.addDependency, this);
 
@@ -56,7 +62,7 @@ module.exports = function(source) {
                                     const requires = entityFiles
                                         .filter((_, i) => fileExistsRes[i])
                                         .map((entityFile, i) => {
-                                            !entity.modName && isFileJsModule(entityFile) && (requireIdx = i);
+                                            !Object(entity.mod).name && isFileJsModule(entityFile) && (requireIdx = i);
                                             return `require('${entityFile}')`
                                         });
 
@@ -67,7 +73,7 @@ module.exports = function(source) {
                 allPromises.push(vow.all(currentEntityRequires)
                     .then(currentEntityRequires => {
                         const requires = currentEntityRequires.reduce((res, entity) => {
-                            if(!entity.requires.length && !entity.entity.optional) {
+                            if(!entity.requires.length) {
                                 throw new Error(`No BEM entity: "${bemNaming.stringify(entity.entity)}"`);
                             }
 
@@ -96,7 +102,12 @@ module.exports = function(source) {
 
 function parseEntityImport(entityImport, ctx) {
     const res = [],
+        tech = ~entityImport.indexOf('.')
+            ? entityImport.substr(entityImport.indexOf('.') + 1, entityImport.length)
+            : null,
         main = {};
+
+        tech && (main.tech = tech);
 
     entityImport.split(' ').forEach((importToken, i) => {
         const split = importToken.split(':'),
@@ -125,14 +136,12 @@ function parseEntityImport(entityImport, ctx) {
                     main.elem || (main.elem = ctx.elem);
                 }
 
-                let resModName = Object.assign({}, main, { modName });
-                res.push(resModName);
-
                 if(modVals) {
-                    resModName.optional = true;
                     modVals.split('|').forEach(modVal => {
-                        res.push(Object.assign({}, main, { modName, modVal }));
+                        res.push(Object.assign({}, main, {mod: {name: modName, val: modVal}}));
                     });
+                } else {
+                    res.push(Object.assign({}, main, {mod: {name: modName}}));
                 }
             break;
         }
