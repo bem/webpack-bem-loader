@@ -4,12 +4,7 @@ const path = require('path'),
     bn = require('bem-naming'),
     BemCell = require('@bem/cell'),
     BemEntityName = require('@bem/entity-name'),
-    bemFs = require('bem-fs-scheme')(),
-    defaultNaming = {
-        elem: '-',
-        wordPattern: '[a-zA-Z0-9]+',
-        elemDirDelim: ''
-    },
+    bemFs = require('@bem/fs-scheme')(),
     falafel = require('falafel'),
     vow = require('vow'),
     vowFs = require('vow-fs'),
@@ -23,7 +18,7 @@ module.exports = function(source) {
         levels = options.levels,
         techs = options.techs,
         allPromises = [],
-        namingOptions = Object.assign(defaultNaming, options.naming),
+        namingOptions = options.naming || 'react',
         bemNaming = bn(namingOptions),
         result = falafel(source, node => {
             if(
