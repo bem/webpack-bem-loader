@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('path'),
-    bn = require('bem-naming'),
+    bn = require('@bem/naming'),
     BemCell = require('@bem/cell'),
     BemEntityName = require('@bem/entity-name'),
     bemFs = require('@bem/fs-scheme')(),
@@ -18,11 +18,13 @@ module.exports = function(source) {
     const callback = this.async(),
         options = this.options.bemLoader || loaderUtils.parseQuery(this.query),
         levels = options.levels,
-        techs = options.techs,
+        defaultTechs = options.techs || ['js'],
+        applicableTech = defaultTechs[0],
         allPromises = [],
         namingOptions = options.naming || 'react',
         bemNaming = bn(namingOptions),
         result = falafel(source, node => {
+            // match by `require('b:button')`
             if(
                 node.type === 'CallExpression' &&
                 node.callee.type === 'Identifier' &&
@@ -30,61 +32,99 @@ module.exports = function(source) {
                 node.arguments[0] && node.arguments[0].value &&
                 node.arguments[0].value.match(/^(b|e|m)\:/)
             ) {
-                let requireIdx = null;
+                const existingEntitiesPromises = parseEntityImport(
+                    node.arguments[0].value,
+                    bemNaming.parse(path.basename(this.resourcePath).split('.')[0])
+                )
 
-                const currentEntityRequires = parseEntityImport(node.arguments[0].value,
-                        bemNaming.parse(path.basename(this.resourcePath).split('.')[0])
-                    )
-                    .map(entity => {
-                        // collect fs path to each entity
-                        // if entity has tech get exactly it, otherwise use default techs
-                        const entityFiles = [].concat(entity.tech || techs).reduce((acc, tech) =>
-                            acc.concat(
-                                // collect entites on all provided levels
-                                levels.map(layer => {
-                                    const cell = new BemCell({entity: new BemEntityName(entity), tech, layer});
-                                    return path.resolve(process.cwd(), bemFs.path(cell, namingOptions));
-                                })
-                            )
-                        , []);
+                // expand entities by all provided levels
+                .reduce((acc, entity) =>
+                    levels.reduce((ac, layer) =>
+                        // if entity has tech get exactly it,
+                        // otherwise expand entities by default techs
+                        ac.concat((entity.tech || defaultTechs).map(tech =>
+                            new BemCell({entity: new BemEntityName(entity), tech, layer})
+                        ))
+                    , acc)
+                , [])
 
-                        entityFiles.forEach(this.addDependency, this);
+                // find path for every entity and check it existance
+                .map(bemCell => {
+                    const entityPath = path.resolve(
+                            process.cwd(),
+                            bemFs.path(bemCell, namingOptions)
+                        );
 
-                        return vow.all(entityFiles.map(vowFs.exists))
-                            .then(fileExistsRes => {
-                                const requires = entityFiles
-                                    .filter((_, i) => fileExistsRes[i])
-                                    .map((entityFile, i) => {
-                                        !Object(entity.mod).name && isFileJsModule(entityFile) && (requireIdx = i);
-                                        return `require('${entityFile}')`
-                                    });
+                    this.addDependency(entityPath);
 
-                                return { entity, requires };
+                    return vowFs
+                        .exists(entityPath)
+                        .then(exist => {
+                            // BemFile
+                            return {
+                                cell: bemCell,
+                                exist,
+                                path: entityPath,
+                                type: bemCell.entity.type,
+                                tech: bemCell.tech
+                            };
+                        });
+                });
+
+                allPromises.push(
+                    vow
+                        .all(existingEntitiesPromises)
+                        .then(bemFiles => {
+                            const possibleErrors = {};
+                            /**
+                             * techMap:
+                             *   js: [enity, entity]
+                             *   css: [entity, entity, entity]
+                             *   i18n: [entity]
+                             */
+                            const techMap = bemFiles.reduce((techMap, file) => {
+                                if (file.exist) {
+                                    techMap[file.tech] = (techMap[file.tech] || []).concat(file);
+                                } else {
+                                    possibleErrors[file.cell.entity.id] = (possibleErrors[file.cell.entity.id] || [])
+                                        .concat(file);
+                                }
+                                return techMap;
+                            }, {});
+
+                            // Each tech has own transformer
+                            // transformer could has read-only access to Node
+                            const value = Object.keys(techMap).map(tech => {
+                                const files = techMap[tech];
+
+                                if (tech === applicableTech) {
+                                    return getStrForApplicable(node, files);
+                                }
+
+                                return getStrForSimpleRequired(node, files);
+                            }).join('\n')
+
+                            Object.keys(possibleErrors).forEach(fileId => {
+                                // check if entity has no tech to resolve
+                                if (possibleErrors[fileId].length === defaultTechs.length) {
+                                    const messages = [];
+                                    if (
+                                        possibleErrors[fileId]
+                                            .every(file => {
+                                                messages.push(`BEM-Module not found: ${file.path}`);
+                                                return ~defaultTechs.indexOf(file.cell.tech);
+                                            })
+                                    ) {
+                                        messages.map(this.emitError, this);
+                                    }
+                                }
                             });
-                    });
 
-                allPromises.push(vow.all(currentEntityRequires)
-                    .then(currentEntityRequires => {
-                        const requires = currentEntityRequires.reduce((res, entity) => {
-                            if(!entity.requires.length) {
-                                throw new Error(`No BEM entity: "${bemNaming.stringify(entity.entity)}"`);
-                            }
-
-                            return res.concat(entity.requires);
-                        }, []);
-
-
-                        const idx = requireIdx !== null,
-                            n = `[${requires.join(',')}]${idx? `[${requireIdx}]` : ''}`;
-
-                        node.update(idx? `
-                          (${n}.default?
-                              ${n}.default.applyDecls() :
-                              ${n}.applyDecls())
-                          ` : n);
-                    }));
+                            node.parent.parent.update(value);
+                        })
+                );
             }
-        });
+    });
 
     vow.all(allPromises)
         .then(() => {
@@ -92,3 +132,25 @@ module.exports = function(source) {
         })
         .catch(callback);
 };
+
+function getStrForSimpleRequired(node, files) {
+    return files
+        .map(file => `require('${file.path}');`)
+        .join('\n');
+}
+
+function getStrForApplicable(node, files) {
+    const name = node.parent.id.name;
+    return files
+        .reduce((acc, file) => {
+            if (file.type === 'block' || file.type === 'elem') {
+                acc[0].push(`var ${name} = require('${file.path}');`);
+                acc[2].push(`${name} = ${name}.default ? ${name}.default.applyDecls() : ${name}.applyDecls();`);
+            } else {
+                acc[1].push(`require('${file.path}');`);
+            }
+            return acc;
+        }, [[],[],[]])
+        .reduce((acc, arr) => acc.concat(arr), [])
+        .join('\n');
+}
