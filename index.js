@@ -38,15 +38,22 @@ module.exports = function(source) {
                 )
 
                 // expand entities by all provided levels
-                .reduce((acc, entity) =>
-                    levels.reduce((ac, layer) =>
+                .reduce((set, entity, i, arr) => {
+                    levels.forEach(layer => {
                         // if entity has tech get exactly it,
                         // otherwise expand entities by default techs
-                        ac.concat((entity.tech || defaultTechs).map(tech =>
-                            new BemCell({entity: new BemEntityName(entity), tech, layer})
-                        ))
-                    , acc)
-                , [])
+                        (entity.tech || defaultTechs).forEach(tech => {
+                            const cell = new BemCell({entity: new BemEntityName(entity), tech, layer})
+                            // only uniq cells
+                            set[cell.id] = cell;
+                        });
+                    });
+                    if (arr.length - 1 === i) {
+                        // TODO move up before parseEntityImport
+                        return Object.keys(set).map(id => set[id]);
+                    }
+                    return set;
+                }, {})
 
                 // find path for every entity and check it existance
                 .map(bemCell => {
@@ -120,7 +127,9 @@ module.exports = function(source) {
                                 }
                             });
 
-                            node.parent.parent.update(value);
+                            node.parent.type === 'ExpressionStatement' ?
+                                node.parent.update(value):
+                                node.parent.parent.update(value);
                         })
                 );
             }
@@ -133,19 +142,40 @@ module.exports = function(source) {
         .catch(callback);
 };
 
+/**
+ * @property {EsprimaASTNode} node
+ * @property {BemFile[]} files
+ * @returns {String[]}
+ */
 function getStrForSimpleRequired(node, files) {
     return files
         .map(file => `require('${file.path}');`)
         .join('\n');
 }
 
+/**
+ * @property {EsprimaASTNode} node
+ * @property {BemFile[]} files
+ * @returns {String[]}
+ */
+let uniqCount = 0;
 function getStrForApplicable(node, files) {
-    const name = node.parent.id.name;
+    const name = node.parent.type === 'ExpressionStatement' ?
+        null :
+        node.parent.id.name;
+
+    // const uniqName = name + `___${++uniqCount}`;
     return files
         .reduce((acc, file) => {
             if (file.type === 'block' || file.type === 'elem') {
-                acc[0].push(`var ${name} = require('${file.path}');`);
-                acc[2].push(`${name} = ${name}.default ? ${name}.default.applyDecls() : ${name}.applyDecls();`);
+                if (name) {
+                    acc[0].push(`var ${name} = require('${file.path}');`);
+                    acc[2].push(`${name} = ${name}.default ? ${name}.default.applyDecls() : ${name}.applyDecls();`);
+                } else {
+                    const id = `uniq___${++uniqCount}`;
+                    acc[0].push(`var ${id} = require('${file.path}');`);
+                    acc[2].push(`${id} = ${id}.default ? ${id}.default.applyDecls() : ${id}.applyDecls();`);
+                }
             } else {
                 acc[1].push(`require('${file.path}');`);
             }
