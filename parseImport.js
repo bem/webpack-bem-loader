@@ -24,7 +24,7 @@
  * @public
  * @property {String} importString - string Literal from import statement
  * @property {BemEntity} [ctx] - entity to restore `block` part
- *                             it's needed for short syntax: `import 'e:elem'`
+ *                             it's needed for short syntax: `import 'e:elemOfThisBlock'`
  *                                                           `import 'm:modOfThisBlock`
  * @returns {BemCell[]}
  */
