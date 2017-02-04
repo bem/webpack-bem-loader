@@ -11,7 +11,9 @@ describe('', () => {
 
     function _assertBlock(entity, blockName) {
         var cell = new BemCell({entity: BemEntity.create(entity)});
+
         expect(cell.entity.block).to.eql(blockName, 'blockName');
+
         return cell;
     }
 
@@ -20,13 +22,13 @@ describe('', () => {
         function assertBlock(entity, blockName) {
             var cell = _assertBlock(entity, blockName);
 
-            expect(cell.entity.type).to.eql('block', 'type');
+            expect(cell.entity.type).to.eql('block', 'type of entity');
         }
 
         function assertBlockMod(entity, blockName, modName, modVal) {
             var cell = _assertBlock(entity, blockName);
 
-            expect(cell.entity.type).to.eql('blockMod', 'type');
+            expect(cell.entity.type).to.eql('blockMod', 'type of entity');
 
             expect(cell.entity.modName).to.eql(modName, 'modName');
             expect(cell.entity.modVal).to.eql(modVal, 'modVal');
@@ -101,32 +103,29 @@ describe('', () => {
                     assertBlockMod(entities[0], 'popup', 'autoclosable', true);
                 });
 
-                xit('should extract block with modifier', () => {
+                it('should extract block with modifier', () => {
                     var entities = parse('m:autoclosable=yes', {block: 'popup'});
 
-                    assertBlockMod(entities[1], 'popup', 'autoclosable', 'yes');
+                    assertBlockMod(entities[0], 'popup', 'autoclosable', 'yes');
                 });
 
-                // FIX IT
-                xit('should extract blockMod with several values', () => {
-                    var entities = parse('m:theme=normal|action');
+                it('should extract blockMod with several values', () => {
+                    var entities = parse('m:theme=normal|action', {block: 'popup'});
 
                     assertBlockMod(entities[0], 'popup', 'theme', 'normal');
                     assertBlockMod(entities[1], 'popup', 'theme', 'action');
                 });
 
-                // FIX IT
-                xit('should extract blockMod with several modifiers', () => {
-                    var entities = parse('m:theme m:autoclosable');
+                it('should extract blockMod with several modifiers', () => {
+                    var entities = parse('m:theme m:autoclosable', {block: 'popup'});
                     expect(entities).to.have.lengthOf(2);
 
                     assertBlockMod(entities[0], 'popup', 'theme', true);
                     assertBlockMod(entities[1], 'popup', 'autoclosable', true);
                 });
 
-                // FIX IT
-                xit('should extract blockMods with several modifiers and several values', () => {
-                    var entities = parse('m:theme=normal|action m:autoclosable=yes');
+                it('should extract blockMods with several modifiers and several values', () => {
+                    var entities = parse('m:theme=normal|action m:autoclosable=yes', {block: 'popup'});
 
                     assertBlockMod(entities[0], 'popup', 'theme', 'normal');
                     assertBlockMod(entities[1], 'popup', 'theme', 'action');
