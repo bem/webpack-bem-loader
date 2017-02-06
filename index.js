@@ -18,7 +18,7 @@ module.exports = function(source) {
         options = this.options.bemLoader || loaderUtils.parseQuery(this.query),
         levels = options.levels,
         defaultTechs = options.techs || ['js'],
-        langs = options['i18n'],
+        generators = Object.assign(require('./generators'), options.customGenerators),
         applicableTech = defaultTechs[0],
         allPromises = [],
         namingOptions = options.naming || 'react',
@@ -30,7 +30,7 @@ module.exports = function(source) {
                 node.callee.type === 'Identifier' &&
                 node.callee.name === 'require' &&
                 node.arguments[0] && node.arguments[0].value &&
-                node.arguments[0].value.match(/^(b|e|m)\:/)
+                node.arguments[0].value.match(bemImport.matchRegExp)
             ) {
                 const existingEntitiesPromises = bemImport.parse(
                     node.arguments[0].value,
@@ -38,22 +38,17 @@ module.exports = function(source) {
                 )
 
                 // expand entities by all provided levels
-                .reduce((set, entity, i, arr) => {
+                .reduce((acc, entity) => {
                     levels.forEach(layer => {
                         // if entity has tech get exactly it,
                         // otherwise expand entities by default techs
                         [].concat(entity.tech || defaultTechs).forEach(tech => {
-                            const cell = new BemCell({entity: new BemEntityName(entity), tech, layer})
-                            // only uniq cells
-                            set[cell.id] = cell;
+                            const cell = new BemCell({entity: new BemEntityName(entity), tech, layer});
+                            acc.push(cell);
                         });
                     });
-                    if (arr.length - 1 === i) {
-                        // TODO move up before parseEntityImport
-                        return Object.keys(set).map(id => set[id]);
-                    }
-                    return set;
-                }, {})
+                    return acc;
+                }, [])
 
                 // find path for every entity and check it existance
                 .map(bemCell => {
@@ -71,9 +66,7 @@ module.exports = function(source) {
                             return {
                                 cell: bemCell,
                                 exist,
-                                path: entityPath,
-                                type: bemCell.entity.type,
-                                tech: bemCell.tech
+                                path: entityPath
                             };
                         });
                 });
@@ -91,7 +84,7 @@ module.exports = function(source) {
                              */
                             const techMap = bemFiles.reduce((techMap, file) => {
                                 if (file.exist) {
-                                    techMap[file.tech] = (techMap[file.tech] || []).concat(file);
+                                    techMap[file.cell.tech] = (techMap[file.cell.tech] || []).concat(file);
                                 } else {
                                     possibleErrors[file.cell.entity.id] = (possibleErrors[file.cell.entity.id] || [])
                                         .concat(file);
@@ -115,19 +108,11 @@ module.exports = function(source) {
                                 }
                             });
 
-                            // Each tech has own transformer
-                            // transformer could has read-only access to Node
+                            // Each tech has own generator
                             const value = Object.keys(techMap).map(tech => {
-                                const files = techMap[tech];
-
-                                switch (tech) {
-                                    case 'js':
-                                        return stringifyApplyable(files);
-                                    case 'i18n':
-                                        return stringifyI18n(langs, files);
-                                    default:
-                                        return bemImport.stringify(files);
-                                }
+                                return generators[tech]?
+                                    generators[tech](techMap[tech]) :
+                                    generators['*'](techMap[tech]);
                             }).join('\n')
 
                             node.update(value);
@@ -142,48 +127,3 @@ module.exports = function(source) {
         })
         .catch(callback);
 };
-
-/**
- * @property {EsprimaASTNode} node
- * @property {BemFile[]} files
- * @returns {String}
- */
-function stringifyApplyable(files) {
-    const apply = require => `${require}.default ?
-        ${require}.default.applyDecls() :
-        ${require}.applyDecls()`;
-
-    const reqStr = file => {
-        return `require('${file.path}')`;
-    };
-
-    return files
-        .reduce((acc, file, i) => {
-            return acc.concat(
-                i === files.length - 1
-                ? `\treturn ${apply(reqStr(file))};`
-                : `\t${reqStr(file)};`
-            )
-        }, ['(function() {'])
-        .concat('})()')
-        .join('\n');
-}
-
-function stringifyI18n(langs, files) {
-
-    console.assert(langs, "Choose languages for i18n");
-
-    const strLang = (file, lang) => `
-        var __${lang} = require('${path.resolve(file.path, lang)}');
-        // TODO: naming inside keysets
-        var _${lang} = Object.keys(__${lang})[0];
-        core.decl(_${lang}, __${lang}[_${lang}], {lang: '${lang}'});
-    `;
-
-    return files
-        .reduce((acc, file) => {
-            return acc.concat(langs.map(lang => strLang(file, lang)));
-        }, ['(function() {\n\tvar core = require(\'bem-react-i18n-core\');'])
-        .concat('\treturn core;\n})()')
-        .join('\n');
-}
