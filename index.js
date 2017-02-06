@@ -17,13 +17,24 @@ module.exports = function(source) {
     const callback = this.async(),
         options = this.options.bemLoader || loaderUtils.parseQuery(this.query),
         levels = options.levels,
-        defaultTechs = options.techs || ['js'],
+        techMap = options.techMap || (options.techs || ['js']).reduce((acc, tech) => {
+            acc[tech] = (acc[tech] || []).concat(tech);
+            return acc;
+        }, {}),
+        fastTechMap = Object.keys(techMap).reduce((acc, tech) => {
+            techMap[tech].forEach(_tech => {
+                acc[_tech] = tech;
+            });
+            return acc;
+        }, {}),
+        defaultTechs = Object.keys(techMap).reduce((acc, tech) => {
+            return acc.concat(techMap[tech])
+        }, []),
         generators = Object.assign(require('./generators'), options.customGenerators),
-        applicableTech = defaultTechs[0],
         allPromises = [],
         namingOptions = options.naming || 'react',
-        bemNaming = bn(namingOptions),
-        result = falafel(source, node => {
+        bemNaming = bn(namingOptions);
+        const result = falafel(source, node => {
             // match by `require('b:button')`
             if(
                 node.type === 'CallExpression' &&
@@ -76,21 +87,21 @@ module.exports = function(source) {
                         .all(existingEntitiesPromises)
                         .then(bemFiles => {
                             const possibleErrors = {};
+                            const techToEntities = {};
                             /**
-                             * techMap:
+                             * techToEntities:
                              *   js: [enity, entity]
                              *   css: [entity, entity, entity]
                              *   i18n: [entity]
                              */
-                            const techMap = bemFiles.reduce((techMap, file) => {
+                            bemFiles.forEach(file => {
                                 if (file.exist) {
-                                    techMap[file.cell.tech] = (techMap[file.cell.tech] || []).concat(file);
+                                    techToEntities[file.cell.tech] = (techToEntities[file.cell.tech] || []).concat(file);
                                 } else {
                                     possibleErrors[file.cell.entity.id] = (possibleErrors[file.cell.entity.id] || [])
                                         .concat(file);
                                 }
-                                return techMap;
-                            }, {});
+                            });
 
                             Object.keys(possibleErrors).forEach(fileId => {
                                 // check if entity has no tech to resolve
@@ -109,10 +120,13 @@ module.exports = function(source) {
                             });
 
                             // Each tech has own generator
-                            const value = Object.keys(techMap).map(tech => {
-                                return generators[tech]?
-                                    generators[tech](techMap[tech]) :
-                                    generators['*'](techMap[tech]);
+                            const value = Object.keys(techToEntities).map(tech => {
+                                // _tech - is tech from options.techMap
+                                // but it could be processed with customGenerator so we need to check just tech too.
+                                const _tech = fastTechMap[tech] || tech;
+                                return generators[_tech]?
+                                    generators[_tech](techToEntities[tech]) :
+                                    generators['*'](techToEntities[tech]);
                             }).join('\n')
 
                             node.update(value);
