@@ -33,8 +33,8 @@ module.exports = function(source) {
         generators = Object.assign(require('./generators'), options.customGenerators),
         allPromises = [],
         namingOptions = options.naming || 'react',
-        bemNaming = bn(namingOptions);
-        const result = falafel(source, node => {
+        bemNaming = bn(namingOptions),
+        result = falafel(source, node => {
             // match by `require('b:button')`
             if(
                 node.type === 'CallExpression' &&
