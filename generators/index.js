@@ -20,10 +20,9 @@ function generateJsStr(files) {
                 ? `require('${file.path}'),`
                 : `(require('${file.path}').default || require('${file.path}')).applyDecls()`
         ), ['('])
-        .concat(');')
+        .concat(')')
         .join('\n');
 }
-
 
 module.exports = {
     js : generateJsStr,

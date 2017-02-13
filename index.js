@@ -21,16 +21,14 @@ module.exports = function(source) {
             acc[tech] = (acc[tech] || []).concat(tech);
             return acc;
         }, {}),
-        fastTechMap = Object.keys(techMap).reduce((acc, tech) => {
+        extToTech = Object.keys(techMap).reduce((acc, tech) => {
             techMap[tech].forEach(_tech => {
                 acc[_tech] = tech;
             });
             return acc;
         }, {}),
-        defaultTechs = Object.keys(techMap).reduce((acc, tech) => {
-            return acc.concat(techMap[tech])
-        }, []),
-        generators = Object.assign(require('./generators'), options.customGenerators),
+        defaultTechs = Object.keys(techMap).reduce((acc, tech) => acc.concat(techMap[tech]), []),
+        generators = require('./generators'),
         allPromises = [],
         namingOptions = options.naming || 'react',
         bemNaming = bn(namingOptions),
@@ -53,8 +51,7 @@ module.exports = function(source) {
                         // if entity has tech get exactly it,
                         // otherwise expand entities by default techs
                         [].concat(entity.tech || defaultTechs).forEach(tech => {
-                            const cell = new BemCell({entity: new BemEntityName(entity), tech, layer});
-                            acc.push(cell);
+                            acc.push(BemCell.create({entity, tech, layer}));
                         });
                     });
                     return acc;
@@ -85,48 +82,37 @@ module.exports = function(source) {
                     vow
                         .all(existingEntitiesPromises)
                         .then(bemFiles => {
-                            const possibleErrors = {};
-                            const techToEntities = {};
+                            const techToFiles = {};
+                            const existsEntities = {};
+                            const unExistsEntities = {};
                             /**
-                             * techToEntities:
+                             * techToFiles:
                              *   js: [enity, entity]
                              *   css: [entity, entity, entity]
                              *   i18n: [entity]
                              */
                             bemFiles.forEach(file => {
+                                existsEntities[file.cell.entity.id] || (existsEntities[file.cell.entity.id] = []);
+                                unExistsEntities[file.cell.entity.id] || (unExistsEntities[file.cell.entity.id] = []);
                                 if (file.exist) {
-                                    techToEntities[file.cell.tech] = (techToEntities[file.cell.tech] || []).concat(file);
+                                    (techToFiles[file.cell.tech] || (techToFiles[file.cell.tech] = [])).push(file);
+                                    existsEntities[file.cell.entity.id].push(file);
                                 } else {
-                                    possibleErrors[file.cell.entity.id] = (possibleErrors[file.cell.entity.id] || [])
-                                        .concat(file);
+                                    unExistsEntities[file.cell.entity.id].push(file);
                                 }
                             });
 
-                            Object.keys(possibleErrors).forEach(fileId => {
+                            Object.keys(existsEntities).forEach(fileId => {
                                 // check if entity has no tech to resolve
-                                if (possibleErrors[fileId].length === defaultTechs.length) {
-                                    const messages = [];
-                                    if (
-                                        possibleErrors[fileId]
-                                            .every(file => {
-                                                messages.push(`BEM-Module not found: ${file.path}`);
-                                                return ~defaultTechs.indexOf(file.cell.tech);
-                                            })
-                                    ) {
-                                        messages.map(this.emitError, this);
-                                    }
-                                }
+                                existsEntities[fileId].length || unExistsEntities[fileId].forEach(file => {
+                                    this.emitError(`BEM-Module not found: ${file.path}`);
+                                });
                             });
 
                             // Each tech has own generator
-                            const value = Object.keys(techToEntities).map(tech => {
-                                // _tech - is tech from options.techMap
-                                // but it could be processed with customGenerator so we need to check just tech too.
-                                const _tech = fastTechMap[tech] || tech;
-                                return generators[_tech]?
-                                    generators[_tech](techToEntities[tech]) :
-                                    generators['*'](techToEntities[tech]);
-                            }).join('\n')
+                            const value = Object.keys(techToFiles).map(tech =>
+                                (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
+                            ).join('\n')
 
                             node.update(value);
                         })
@@ -135,8 +121,6 @@ module.exports = function(source) {
     });
 
     vow.all(allPromises)
-        .then(() => {
-            callback(null, result.toString());
-        })
+        .then(() => callback(null, result.toString()))
         .catch(callback);
 };
