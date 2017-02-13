@@ -5,7 +5,7 @@ const path = require('path'),
     BemCell = require('@bem/cell'),
     BemEntityName = require('@bem/entity-name'),
     bemFs = require('@bem/fs-scheme')(),
-    bemImport = require('bem-import'),
+    bemImport = require('@bem/import-notation'),
     falafel = require('falafel'),
     vow = require('vow'),
     vowFs = require('vow-fs'),
@@ -40,8 +40,7 @@ module.exports = function(source) {
                 node.type === 'CallExpression' &&
                 node.callee.type === 'Identifier' &&
                 node.callee.name === 'require' &&
-                node.arguments[0] && node.arguments[0].value &&
-                node.arguments[0].value.match(bemImport.matchRegExp)
+                node.arguments[0] && node.arguments[0].value
             ) {
                 const existingEntitiesPromises = bemImport.parse(
                     node.arguments[0].value,
@@ -82,7 +81,7 @@ module.exports = function(source) {
                         });
                 });
 
-                allPromises.push(
+                existingEntitiesPromises.length && allPromises.push(
                     vow
                         .all(existingEntitiesPromises)
                         .then(bemFiles => {

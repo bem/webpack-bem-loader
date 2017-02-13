@@ -15,13 +15,11 @@
     "@bem/cell": "^0.2.2",
     "@bem/entity-name": "^1.2.0",
     "@bem/fs-scheme": "^2.1.0",
+    "@bem/import-notation": "^1.0.0",
     "@bem/naming": "^2.0.0-3",
-    "bem-import": "github:bem/bem-import#yeti-or.fix-bugs",
     "falafel": "^1.2.0",
     "loader-utils": "^0.2.16",
     "vow": "^0.4.12",
     "vow-fs": "^0.3.5"
-  },
-  "devDependencies": {
   }
 }
