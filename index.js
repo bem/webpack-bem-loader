@@ -56,7 +56,7 @@ module.exports = function(source) {
                                 techMap[entity.tech] || [entity.tech] :
                                 defaultExts
                         ).forEach(tech => {
-                            acc.push(BemCell.create({entity, tech, layer}));
+                            acc.push(BemCell.create({ entity, tech, layer }));
                         });
                     });
                     return acc;
@@ -76,9 +76,9 @@ module.exports = function(source) {
                         .then(exist => {
                             // BemFile
                             return {
-                                cell: bemCell,
+                                cell : bemCell,
                                 exist,
-                                path: entityPath
+                                path : entityPath
                             };
                         });
                 });
@@ -87,9 +87,9 @@ module.exports = function(source) {
                     vow
                         .all(existingEntitiesPromises)
                         .then(bemFiles => {
-                            const techToFiles = {};
-                            const existsEntities = {};
-                            const errEntities = {};
+                            const techToFiles = {},
+                                existsEntities = {},
+                                errEntities = {};
                             /**
                              * techToFiles:
                              *   js: [enity, entity]
@@ -97,43 +97,45 @@ module.exports = function(source) {
                              *   i18n: [entity]
                              */
                             bemFiles.forEach(file => {
-                                if (file.exist) {
+                                if(file.exist) {
                                     (techToFiles[file.cell.tech] || (techToFiles[file.cell.tech] = [])).push(file);
                                     existsEntities[file.cell.entity.id] = true;
 
-                                    if (file.cell.entity.mod && !file.cell.entity.isSimpleMod()) {
+                                    if(file.cell.entity.mod && !file.cell.entity.isSimpleMod()) {
                                         // Add existence for `_mod` if `_mod_val` exists.
                                         existsEntities[BemEntityName.create({
-                                            block: file.cell.entity.block,
-                                            elem: file.cell.entity.elem,
-                                            modName: file.cell.entity.modName
+                                            block : file.cell.entity.block,
+                                            elem : file.cell.entity.elem,
+                                            modName : file.cell.entity.modName
                                         }).id] = true;
                                     }
                                 } else {
-                                    existsEntities[file.cell.entity.id] || (existsEntities[file.cell.entity.id]  = false);
-                                    (errEntities[file.cell.entity.id] || (errEntities[file.cell.entity.id] = [])).push(file);
+                                    existsEntities[file.cell.entity.id] ||
+                                        (existsEntities[file.cell.entity.id]  = false);
+                                    (errEntities[file.cell.entity.id] ||
+                                        (errEntities[file.cell.entity.id] = [])).push(file);
                                 }
                             });
 
                             Object.keys(existsEntities).forEach(fileId => {
                                 // check if entity has no tech to resolve
-                                if (!existsEntities[fileId]) {
+                                if(!existsEntities[fileId]) {
                                     errEntities[fileId].forEach(file => {
                                         this.emitError(`BEM-Module not found: ${file.path}`);
                                     });
                                 }
                             });
 
-                            // Each tech has own generator
-                            const value = Object.keys(techToFiles).map(tech =>
-                                (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
-                            ).join('\n')
-
-                            node.update(value);
+                            node.update(
+                                // Each tech has own generator
+                                Object.keys(techToFiles).map(tech =>
+                                    (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
+                                ).join('\n')
+                            );
                         })
                 );
             }
-    });
+        });
 
     vow.all(allPromises)
         .then(() => callback(null, result.toString()))
