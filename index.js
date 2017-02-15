@@ -3,6 +3,7 @@
 const path = require('path'),
     bn = require('@bem/naming'),
     BemCell = require('@bem/cell'),
+    BemEntityName = require('@bem/entity-name'),
     bemFs = require('@bem/fs-scheme')(),
     bemImport = require('@bem/import-notation'),
     falafel = require('falafel'),
@@ -88,8 +89,7 @@ module.exports = function(source) {
                         .then(bemFiles => {
                             const techToFiles = {};
                             const existsEntities = {};
-                            const unExistsEntities = {};
-                            const uniqEntities = {};
+                            const errEntities = {};
                             /**
                              * techToFiles:
                              *   js: [enity, entity]
@@ -97,25 +97,28 @@ module.exports = function(source) {
                              *   i18n: [entity]
                              */
                             bemFiles.forEach(file => {
-                                existsEntities[file.cell.entity.id] || (existsEntities[file.cell.entity.id] = []);
-                                unExistsEntities[file.cell.entity.id] || (unExistsEntities[file.cell.entity.id] = []);
-                                uniqEntities[file.cell.entity.id] = file.cell.entity;
                                 if (file.exist) {
                                     (techToFiles[file.cell.tech] || (techToFiles[file.cell.tech] = [])).push(file);
-                                    existsEntities[file.cell.entity.id].push(file);
+                                    existsEntities[file.cell.entity.id] = true;
+
+                                    if (file.cell.entity.mod && !file.cell.entity.isSimpleMod()) {
+                                        // Add existence for `_mod` if `_mod_val` exists.
+                                        existsEntities[BemEntityName.create({
+                                            block: file.cell.entity.block,
+                                            elem: file.cell.entity.elem,
+                                            modName: file.cell.entity.modName
+                                        }).id] = true;
+                                    }
                                 } else {
-                                    unExistsEntities[file.cell.entity.id].push(file);
+                                    existsEntities[file.cell.entity.id] || (existsEntities[file.cell.entity.id]  = false);
+                                    (errEntities[file.cell.entity.id] || (errEntities[file.cell.entity.id] = [])).push(file);
                                 }
                             });
 
                             Object.keys(existsEntities).forEach(fileId => {
                                 // check if entity has no tech to resolve
-                                if (!existsEntities[fileId].length) {
-                                    const entity = uniqEntities[fileId];
-                                    if (entity.isSimpleMod()) {
-                                        return;
-                                    }
-                                    unExistsEntities[fileId].forEach(file => {
+                                if (!existsEntities[fileId]) {
+                                    errEntities[fileId].forEach(file => {
                                         this.emitError(`BEM-Module not found: ${file.path}`);
                                     });
                                 }

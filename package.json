@@ -12,7 +12,8 @@
   ],
   "license": "MPL-2.0",
   "dependencies": {
-    "@bem/cell": "^0.2.4",
+    "@bem/cell": "^0.2.2",
+    "@bem/entity-name": "^1.3.0",
     "@bem/fs-scheme": "^2.1.0",
     "@bem/import-notation": "^1.0.0",
     "@bem/naming": "^2.0.0-3",
