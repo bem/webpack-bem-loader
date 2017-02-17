@@ -61,7 +61,9 @@ module.exports = function(source) {
             // find path for every entity and check it existance
             .map(bemCell => {
                 const entityPath = path.resolve(bemFs.path(bemCell, namingOptions));
+
                 this.addDependency(entityPath);
+
                 return vowFs
                     .exists(entityPath)
                     .then(exist => {
@@ -108,7 +110,7 @@ module.exports = function(source) {
                             existsEntities[id] = true;
 
                             // Add existence for `_mod` if `_mod_val` exists.
-                            entity.mod && !entity.isSimpleMod() &&
+                            entity.isSimpleMod() === false &&
                                 (existsEntities[BemEntityName.create({ block, elem, modName }).id] = true);
                         });
 
@@ -119,16 +121,16 @@ module.exports = function(source) {
                             });
                         });
 
-                        // Each tech has own generator
-                        const value = Object.keys(techToFiles)
-                            // js tech is always last
-                            .sort(a => extToTech[a] === 'js')
-                            .map(tech =>
-                                (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
-                            )
-                            .join(',\n')
-
-                        node.update(`(${value})`);
+                        node.update(`(${
+                            // Each tech has own generator
+                            Object.keys(techToFiles)
+                                // js tech is always last
+                                .sort(a => extToTech[a] === 'js')
+                                .map(tech =>
+                                    (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
+                                )
+                                .join(',\n')
+                        })`);
                     })
             );
         });
