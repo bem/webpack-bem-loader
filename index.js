@@ -6,10 +6,12 @@ const path = require('path'),
     BemEntityName = require('@bem/entity-name'),
     bemFs = require('@bem/fs-scheme')(),
     bemImport = require('@bem/import-notation'),
+    requiredPath = require('required-path'),
     falafel = require('falafel'),
     vow = require('vow'),
     vowFs = require('vow-fs'),
-    loaderUtils = require('loader-utils');
+    loaderUtils = require('loader-utils'),
+    generators = require('./generators');
 
 module.exports = function(source) {
     this.cacheable && this.cacheable();
@@ -29,112 +31,102 @@ module.exports = function(source) {
             return acc;
         }, {}),
         defaultExts = Object.keys(extToTech),
-        generators = require('./generators'),
         allPromises = [],
         namingOptions = options.naming || 'react',
         bemNaming = bn(namingOptions),
         result = falafel(source, node => {
             // match `require('b:button')`
-            if(
+            if(!(
                 node.type === 'CallExpression' &&
                 node.callee.type === 'Identifier' &&
                 node.callee.name === 'require' &&
-                node.arguments[0] && node.arguments[0].value
-            ) {
-                const existingEntitiesPromises = bemImport.parse(
-                    node.arguments[0].value,
-                    bemNaming.parse(path.basename(this.resourcePath).split('.')[0])
-                )
+                Object(node.arguments[0]).value
+            )) return;
 
-                // expand entities by all provided levels
-                .reduce((acc, entity) => {
-                    levels.forEach(layer => {
-                        // if entity has tech get extensions for it or exactly it,
-                        // otherwise expand entities by default extensions
-                        (
-                            entity.tech ?
-                                techMap[entity.tech] || [entity.tech] :
-                                defaultExts
-                        ).forEach(tech => {
-                            acc.push(BemCell.create({ entity, tech, layer }));
-                        });
+            const existingEntitiesPromises = bemImport.parse(
+                node.arguments[0].value,
+                bemNaming.parse(path.basename(this.resourcePath).split('.')[0])
+            )
+            // expand entities by all provided levels
+            .reduce((acc, entity) => {
+                levels.forEach(layer => {
+                    // if entity has tech get extensions for it or exactly it,
+                    // otherwise expand entities by default extensions
+                    (entity.tech? techMap[entity.tech] || [entity.tech] : defaultExts).forEach(tech => {
+                        acc.push(BemCell.create({ entity, tech, layer }));
                     });
-                    return acc;
-                }, [])
-
-                // find path for every entity and check it existance
-                .map(bemCell => {
-                    const entityPath = path.resolve(
-                            process.cwd(),
-                            bemFs.path(bemCell, namingOptions)
-                        );
-
-                    this.addDependency(entityPath);
-
-                    return vowFs
-                        .exists(entityPath)
-                        .then(exist => {
-                            // BemFile
-                            return {
-                                cell : bemCell,
-                                exist,
-                                path : entityPath
-                            };
-                        });
                 });
+                return acc;
+            }, [])
+            // find path for every entity and check it existance
+            .map(bemCell => {
+                const entityPath = path.resolve(bemFs.path(bemCell, namingOptions));
+                this.addDependency(entityPath);
+                return vowFs
+                    .exists(entityPath)
+                    .then(exist => {
+                        // BemFile
+                        return {
+                            cell : bemCell,
+                            exist,
+                            // prepare path for require cause relative returns us string that we couldn't require
+                            path : requiredPath(path.relative(path.dirname(this.resourcePath), entityPath))
+                        };
+                    });
+            });
 
-                existingEntitiesPromises.length && allPromises.push(
-                    vow
-                        .all(existingEntitiesPromises)
-                        .then(bemFiles => {
-                            const techToFiles = {},
-                                existsEntities = {},
-                                errEntities = {};
-                            /**
-                             * techToFiles:
-                             *   js: [enity, entity]
-                             *   css: [entity, entity, entity]
-                             *   i18n: [entity]
-                             */
-                            bemFiles.forEach(file => {
-                                if(file.exist) {
-                                    (techToFiles[file.cell.tech] || (techToFiles[file.cell.tech] = [])).push(file);
-                                    existsEntities[file.cell.entity.id] = true;
+            existingEntitiesPromises.length && allPromises.push(
+                vow
+                    .all(existingEntitiesPromises)
+                    .then(bemFiles => {
+                        /**
+                         * techToFiles:
+                         *   js: [entity, entity]
+                         *   css: [entity, entity, entity]
+                         *   i18n: [entity]
+                         */
+                        const techToFiles = {},
+                            existsEntities = {},
+                            errEntities = {};
 
-                                    if(file.cell.entity.mod && !file.cell.entity.isSimpleMod()) {
-                                        // Add existence for `_mod` if `_mod_val` exists.
-                                        existsEntities[BemEntityName.create({
-                                            block : file.cell.entity.block,
-                                            elem : file.cell.entity.elem,
-                                            modName : file.cell.entity.modName
-                                        }).id] = true;
-                                    }
-                                } else {
-                                    existsEntities[file.cell.entity.id] ||
-                                        (existsEntities[file.cell.entity.id]  = false);
-                                    (errEntities[file.cell.entity.id] ||
-                                        (errEntities[file.cell.entity.id] = [])).push(file);
-                                }
+                        bemFiles.forEach(file => {
+                            const tech = file.cell.tech,
+                                entity = file.cell.entity,
+                                block = entity.block,
+                                elem = entity.elem,
+                                modName = entity.modName,
+                                id = entity.id;
+
+                            if(!file.exist) {
+                                // there are no realizations found neither on levels not in techs
+                                existsEntities[id] || (existsEntities[id] = false);
+                                (errEntities[id] || (errEntities[id] = [])).push(file);
+                                return;
+                            }
+
+                            (techToFiles[tech] || (techToFiles[tech] = [])).push(file);
+                            existsEntities[id] = true;
+
+                            // Add existence for `_mod` if `_mod_val` exists.
+                            entity.mod && !entity.isSimpleMod() &&
+                                (existsEntities[BemEntityName.create({ block, elem, modName }).id] = true);
+                        });
+
+                        Object.keys(existsEntities).forEach(fileId => {
+                            // check if entity has no tech to resolve
+                            existsEntities[fileId] || errEntities[fileId].forEach(file => {
+                                this.emitError(`BEM-Module not found: ${file.path}`);
                             });
+                        });
 
-                            Object.keys(existsEntities).forEach(fileId => {
-                                // check if entity has no tech to resolve
-                                if(!existsEntities[fileId]) {
-                                    errEntities[fileId].forEach(file => {
-                                        this.emitError(`BEM-Module not found: ${file.path}`);
-                                    });
-                                }
-                            });
-
-                            node.update(
-                                // Each tech has own generator
-                                Object.keys(techToFiles).map(tech =>
-                                    (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
-                                ).join('\n')
-                            );
-                        })
-                );
-            }
+                        node.update(
+                            // Each tech has own generator
+                            Object.keys(techToFiles).map(tech =>
+                                (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
+                            ).join('\n')
+                        );
+                    })
+            );
         });
 
     vow.all(allPromises)

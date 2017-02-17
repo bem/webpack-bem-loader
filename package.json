@@ -15,13 +15,14 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@bem/cell": "^0.2.2",
+    "@bem/cell": "^0.2.5",
     "@bem/entity-name": "^1.3.0",
     "@bem/fs-scheme": "^2.1.0",
     "@bem/import-notation": "^1.0.0",
     "@bem/naming": "^2.0.0-3",
     "falafel": "^1.2.0",
     "loader-utils": "^0.2.16",
+    "required-path": "^1.0.1",
     "vow": "^0.4.12",
     "vow-fs": "^0.3.5"
   },
