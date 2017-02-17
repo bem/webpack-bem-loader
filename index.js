@@ -117,7 +117,7 @@ module.exports = function(source) {
                         Object.keys(existsEntities).forEach(fileId => {
                             // check if entity has no tech to resolve
                             existsEntities[fileId] || errEntities[fileId].forEach(file => {
-                                this.emitError(`BEM-Module not found: ${file.path}`);
+                                this.emitError(`BEM module not found: ${file.path}`);
                             });
                         });
 
