@@ -5,8 +5,8 @@
  */
 function generateStr(files) {
     return files
-        .map(file => `require('${file.path}');`)
-        .join('\n');
+        .map(file => `require('${file.path}')`)
+        .join(',\n');
 }
 
 /**

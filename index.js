@@ -119,12 +119,16 @@ module.exports = function(source) {
                             });
                         });
 
-                        node.update(
-                            // Each tech has own generator
-                            Object.keys(techToFiles).map(tech =>
+                        // Each tech has own generator
+                        const value = Object.keys(techToFiles)
+                            // js tech is always last
+                            .sort(a => extToTech[a] === 'js')
+                            .map(tech =>
                                 (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
-                            ).join('\n')
-                        );
+                            )
+                            .join(',\n')
+
+                        node.update(`(${value})`);
                     })
             );
         });
