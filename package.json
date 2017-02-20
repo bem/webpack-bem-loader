@@ -36,6 +36,7 @@
     "babel-jest": "^18.0.0"
   },
   "jest": {
-    "testRegex": "/__tests__/.*(\\.spec)\\.jsx?$"
+    "testRegex": "/__tests__/.*(\\.spec)\\.jsx?$",
+    "coverageReporters": ["html"]
   }
 }

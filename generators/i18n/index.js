@@ -4,18 +4,28 @@ var path = require('path'),
 function generateI18n(langs, files) {
     const strLang = (file, lang) => `
         if (process.env.BEM_LANG === '${lang}') {
-            return core()
+            return core
                 .decl(require('${requiredPath(path.join(file.path, lang))}'))
                 ('${file.cell.entity.id}');
         }`;
 
+    // TODO
+    // import i18n from 'b:attach t:i18n'
+    // var i18n = (function(){
+    //     if(process.env.BEM_LANG === 'ru'){
+    //         return require('core')
+    //             .decl(require('common/ru'))
+    //             .decl(require('desktop/ru'))
+    //             ('attach');
+    //     }
+
     return files
-        .reduce((acc, file) => {
-            return acc.concat(langs.map(lang => strLang(file, lang)));
-        }, ['(function() {', `var core = require('${requiredPath(path.join(__dirname, "core"))}');`])
+        .reduce(
+            (acc, file) => acc.concat(langs.map(lang => strLang(file, lang))),
+            ['(function() {', `var core = require('${requiredPath(path.join(__dirname, 'core'))}');`])
         .concat([
-            'console.error("Define process.env.BEM_LANG");',
-            'return function(){};\n})()'
+            'throw Error(\'I18N: No lang files\');',
+            '})()'
         ])
         .join('\n');
 }
