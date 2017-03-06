@@ -17,7 +17,11 @@ module.exports = function(source) {
     this.cacheable && this.cacheable();
 
     const callback = this.async(),
-        options = this.options.bemLoader || loaderUtils.parseQuery(this.query),
+        options = Object.assign(
+            {},
+            this.options.bemLoader,
+            loaderUtils.getOptions(this)
+        ),
         levels = options.levels,
         techs = options.techs || ['js'],
         techMap = techs.reduce((acc, tech) => {
