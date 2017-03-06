@@ -21,7 +21,7 @@
     "@bem/import-notation": "^1.0.0",
     "@bem/naming": "^2.0.0-3",
     "falafel": "^1.2.0",
-    "loader-utils": "^0.2.16",
+    "loader-utils": "1.0.2",
     "required-path": "^1.0.1",
     "vow": "^0.4.12",
     "vow-fs": "^0.3.5"
