@@ -24,6 +24,7 @@ module.exports = function(source) {
         ),
         levels = options.levels,
         techs = options.techs || ['js'],
+        langs = options.langs || ['ru'],
         techMap = techs.reduce((acc, tech) => {
             acc[tech] || (acc[tech] = [tech]);
             return acc;
@@ -39,7 +40,7 @@ module.exports = function(source) {
         namingOptions = options.naming || 'react',
         bemNaming = bn(namingOptions);
 
-    options.langs && (generators.i18n = require('./generators/i18n').generate(options.langs));
+    generators.i18n = require('./generators/i18n').generate(langs);
 
     const result = falafel(source, node => {
         // match `require('b:button')`
