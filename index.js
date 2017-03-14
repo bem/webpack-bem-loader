@@ -24,7 +24,7 @@ module.exports = function(source) {
         ),
         levels = options.levels,
         techs = options.techs || ['js'],
-        langs = options.langs || ['ru'],
+        langs = options.langs || ['en'],
         techMap = techs.reduce((acc, tech) => {
             acc[tech] || (acc[tech] = [tech]);
             return acc;

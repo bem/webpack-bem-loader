@@ -3,22 +3,18 @@ const path = require('path'),
 
 function generateI18n(langs, files) {
     const strLang = (file, lang) => `
-        if (process.env.BEM_LANG ? process.env.BEM_LANG === '${lang}' : 'ru' === '${lang}') {
+        if (process.env.BEM_LANG ? process.env.BEM_LANG === '${lang}' : 'en' === '${lang}') {
             return core()
                 .decl(require('${requiredPath(path.join(file.path, lang))}'))
                     ('${file.cell.entity.id}');
         }`;
+
     return files
         .reduce((acc, file) => {
             return acc.concat(langs.map(lang => strLang(file, lang)));
-        }, [
-            '(function() {',
-            `var core = require('${requiredPath(path.join(__dirname, "core"))}');`
-        ])
+        }, ['(function() {', `var core = require('${requiredPath(path.join(__dirname, "core"))}');`])
         .concat([
-            'process.env.BEM_LANG?',
-            'console.error(\'bemLoader option langs should include\', "\'" + process.env.BEM_LANG + "\'"):',
-            'console.error(\'Define process.env.BEM_LANG\');',
+            `console.error('No match of process.env.BEM_LANG {' + process.env.BEM_LANG + '} in provided langs: {${langs}}');`,
             'return function(){};\n})()'
         ])
         .join('\n');
