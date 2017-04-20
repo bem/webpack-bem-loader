@@ -120,6 +120,9 @@ module.exports = function(source) {
                         // Add existence for `_mod` if `_mod_val` exists.
                         entity.isSimpleMod() === false &&
                             (existsEntities[BemEntityName.create({ block, elem, modName }).id] = true);
+                        // Add existance for elem if __elem_mod exists.
+                        entity.elem &&
+                            (existsEntities[BemEntityName.create({ block, elem }).id] = true);
                     });
 
                     Object.keys(existsEntities).forEach(fileId => {
