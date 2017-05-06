@@ -2,7 +2,7 @@
 
 [Webpack](https://github.com/webpack/webpack) loader for [bem-react-core](https://github.com/bem/bem-react-core)
 
-BEM-entities auto resolver for custom import strings:
+BEM entities auto resolver for custom import strings:
 
 ``` js
 import Block from 'b:block';
@@ -19,21 +19,60 @@ import BlockElem from 'b:block e:elem m:modName=modVal1|modVal2';
 
 ## Usage
 
-`webpack.config.js`
+In your `webpack.config.js`.
 
-//TODO: webpack 2
+#### Webpack 1
 
 ``` js
   // setting for bem-loader
   bemLoader: {
     naming: 'react',
     levels: ['./pathToBlocks'],
+    // OR:
+    // levels: {
+    //     './pathToBlocks': {
+    //         default: true,
+    //         scheme: 'nested',
+    //         naming: 'origin'
+    //     }
+    // },
     techs: ['js', 'css'],
     techMap: {
         js : ['react.js']
     },
     langs: ['ru', 'en']
   },
+```
+
+#### Webpack 2
+
+``` js
+// setting for bem-loader
+module: {
+    rules: [
+        {
+            test : /\react.js$/,
+            loader: 'webpack-bem-loader',
+            options: {
+                naming: 'react',
+                levels: ['./pathToBlocks'],
+                // OR:
+                // levels: {
+                //     './pathToBlocks': {
+                //         default: true,
+                //         scheme: 'nested',
+                //         naming: 'origin'
+                //     }
+                // },
+                techs: ['js', 'css'],
+                techMap: {
+                    js : ['react.js']
+                },
+                langs: ['ru', 'en']
+            }
+        }
+    ]
+}
 ```
 
 ## Options
@@ -52,7 +91,7 @@ On file system:
 
 ```
 blocks/Attach/
-├── Attach.js
+├── Attach.react.js
 ├── Attach.i18n
 │   ├── en.js
 │   ├── ru.js

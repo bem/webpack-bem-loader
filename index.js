@@ -4,7 +4,7 @@ const path = require('path'),
     bn = require('@bem/naming'),
     BemCell = require('@bem/cell'),
     BemEntityName = require('@bem/entity-name'),
-    bemFs = require('@bem/fs-scheme')(), // TODO: plain
+    bemFs = require('@bem/fs-scheme')(), // TODO: https://github.com/bem/bem-react-core/issues/91
     bemImport = require('@bem/import-notation'),
     bemConfig = require('bem-config')(),
     requiredPath = require('required-path'),
@@ -52,6 +52,7 @@ module.exports = function(source) {
         const existingEntitiesPromises = bemImport.parse(
             node.arguments[0].value,
             // FIXME: we really need this context for parsing import?
+            // https://github.com/bem-sdk/bem-fs-scheme/issues/18
             bemNaming.parse(path.basename(this.resourcePath).split('.')[0])
         )
         // expand entities by all provided levels
