@@ -4,7 +4,7 @@ const path = require('path'),
     bn = require('@bem/naming'),
     BemCell = require('@bem/cell'),
     BemEntityName = require('@bem/entity-name'),
-    bemFs = require('@bem/fs-scheme')(), // TODO: https://github.com/bem/bem-react-core/issues/91
+    bemFs = require('@bem/fs-scheme'),
     bemImport = require('@bem/import-notation'),
     bemConfig = require('bem-config')(),
     requiredPath = require('required-path'),
@@ -69,7 +69,8 @@ module.exports = function(source) {
         // find path for every entity and check it existance
         .map(bemCell => {
             const localNamingOpts = levelsMap[bemCell.layer].naming || namingOptions;
-            const entityPath = path.resolve(bemFs.path(bemCell, localNamingOpts));
+            const fsScheme = levelsMap[bemCell.layer].scheme || 'nested';
+            const entityPath = path.resolve(bemFs(fsScheme).path(bemCell, localNamingOpts));
 
             this.addDependency(entityPath);
 
