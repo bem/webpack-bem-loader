@@ -4,8 +4,9 @@ const path = require('path'),
     bn = require('@bem/naming'),
     BemCell = require('@bem/cell'),
     BemEntityName = require('@bem/entity-name'),
-    bemFs = require('@bem/fs-scheme')(),
+    bemFs = require('@bem/fs-scheme')(), // TODO: plain
     bemImport = require('@bem/import-notation'),
+    bemConfig = require('bem-config')(),
     requiredPath = require('required-path'),
     falafel = require('falafel'),
     vow = require('vow'),
@@ -17,12 +18,9 @@ module.exports = function(source) {
     this.cacheable && this.cacheable();
 
     const callback = this.async(),
-        options = Object.assign(
-            {},
-            this.options.bemLoader,
-            loaderUtils.getOptions(this)
-        ),
-        levels = options.levels,
+        options = Object.assign({}, this.options.bemLoader, loaderUtils.getOptions(this)),
+        levelsMap = bemConfig.levelMapSync() || opts.levels,
+        levels = Array.isArray(levelsMap) ? levelsMap : Object.keys(levelsMap),
         techs = options.techs || ['js'],
         langs = options.langs || ['en'],
         techMap = techs.reduce((acc, tech) => {
@@ -53,6 +51,7 @@ module.exports = function(source) {
 
         const existingEntitiesPromises = bemImport.parse(
             node.arguments[0].value,
+            // FIXME: we really need this context for parsing import?
             bemNaming.parse(path.basename(this.resourcePath).split('.')[0])
         )
         // expand entities by all provided levels
@@ -68,7 +67,8 @@ module.exports = function(source) {
         }, [])
         // find path for every entity and check it existance
         .map(bemCell => {
-            const entityPath = path.resolve(bemFs.path(bemCell, namingOptions));
+            const localNamingOpts = levelsMap[bemCell.layer].naming || namingOptions;
+            const entityPath = path.resolve(bemFs.path(bemCell, localNamingOpts));
 
             this.addDependency(entityPath);
 

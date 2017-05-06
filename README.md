@@ -2,9 +2,7 @@
 
 [Webpack](https://github.com/webpack/webpack) loader for [bem-react-core](https://github.com/bem/bem-react-core)
 
-# BEM import
-
-BEM-entities auto resolver for custom import strings.
+BEM-entities auto resolver for custom import strings:
 
 ``` js
 import Block from 'b:block';
@@ -23,8 +21,10 @@ import BlockElem from 'b:block e:elem m:modName=modVal1|modVal2';
 
 `webpack.config.js`
 
-```
-  // setting for bem-import
+//TODO: webpack 2
+
+``` js
+  // setting for bem-loader
   bemLoader: {
     naming: 'react',
     levels: ['./pathToBlocks'],
@@ -52,7 +52,7 @@ On file system:
 
 ```
 blocks/Attach/
-├── Attach.react.js
+├── Attach.js
 ├── Attach.i18n
 │   ├── en.js
 │   ├── ru.js
@@ -72,7 +72,7 @@ module.exports = {
 };
 ```
 
-inside `Attach.react.js`:
+inside `Attach.js`:
 
 ```js
 import i18n from `b:Attach t:i18n`
@@ -106,4 +106,3 @@ console.log(i18n('button-text')) // → Dosya seç
 
 
 ### License MPL-2.0
-
