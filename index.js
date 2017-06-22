@@ -19,7 +19,7 @@ module.exports = function(source) {
 
     const callback = this.async(),
         options = Object.assign({}, this.options.bemLoader, loaderUtils.getOptions(this)),
-        levelsMap = bemConfig.levelMapSync() || opts.levels,
+        levelsMap = options.levels || bemConfig.levelMapSync(),
         levels = Array.isArray(levelsMap) ? levelsMap : Object.keys(levelsMap),
         techs = options.techs || ['js'],
         langs = options.langs || ['en'],
@@ -68,8 +68,8 @@ module.exports = function(source) {
         }, [])
         // find path for every entity and check it existance
         .map(bemCell => {
-            const localNamingOpts = levelsMap[bemCell.layer].naming || namingOptions;
-            const fsScheme = levelsMap[bemCell.layer].scheme || 'nested';
+            const localNamingOpts = (levelsMap[bemCell.layer] && levelsMap[bemCell.layer].naming) || namingOptions;
+            const fsScheme = (levelsMap[bemCell.layer] && levelsMap[bemCell.layer].scheme) || 'nested';
             const entityPath = path.resolve(bemFs(fsScheme).path(bemCell, localNamingOpts));
 
             this.addDependency(entityPath);
