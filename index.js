@@ -35,7 +35,7 @@ module.exports = function(source) {
         }, {}),
         defaultExts = Object.keys(extToTech),
         allPromises = [],
-        winPath = path => path.replace(/\\/g, '/'),
+        unifyPath = path => path.replace(/\\/g, '/'),
         namingOptions = options.naming || 'react',
         bemNaming = bn(namingOptions);
 
@@ -83,7 +83,7 @@ module.exports = function(source) {
                         cell : bemCell,
                         exist,
                         // prepare path for require cause relative returns us string that we couldn't require
-                        path : winPath(requiredPath(path.relative(path.dirname(this.resourcePath), entityPath)))
+                        path : unifyPath(requiredPath(path.relative(path.dirname(this.resourcePath), entityPath)))
                     };
                 });
         });
