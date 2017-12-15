@@ -40,7 +40,18 @@ In your `webpack.config.js`.
     techMap: {
         js : ['react.js']
     },
-    langs: ['ru', 'en']
+    langs: ['ru', 'en'],
+    generators: {
+        js: null
+    }
+    // OR:
+    // generators: {
+    //     js: (files) => {
+    //         return files
+    //             .map(file => `require('${file.path}')`)
+    //             .join(',\n');
+    //     }
+    // }
   },
 ```
 
@@ -68,7 +79,18 @@ module: {
                 techMap: {
                     js : ['react.js']
                 },
-                langs: ['ru', 'en']
+                langs: ['ru', 'en'],
+                generators: {
+                    js: null
+                }
+                // OR:
+                // generators: {
+                //     js: (files) => {
+                //         return files
+                //             .map(file => `require('${file.path}')`)
+                //             .join(',\n');
+                //     }
+                // }
             }
         }
     ]
@@ -82,6 +104,7 @@ module: {
 - __techs__ <Array>: list of techs extensions for require in runtime, `['js']` by default
 - __techMap__ <Object>: mapping of techs to extensions. Example: `{ 'js' : ['react.js', 'react.ts', 'react.es'], 'css' : ['post.css'] }`
 - __langs__ <Array>: list of langs in which resloves '.i18n' tech
+- __generators__ <Object>: customization of code generators by tech. The function when it is provided receive one argument: __files__ with signature `Array<String>`. This is the list of files of the specified technology, got from current import. Examples: `{ js : null }` or ```{ js: (files) => files.map(file => `require('${file.path}')`).join(',\n') }```
 
 ## i18n
 
