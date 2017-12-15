@@ -12,7 +12,7 @@ const path = require('path'),
     vow = require('vow'),
     vowFs = require('vow-fs'),
     loaderUtils = require('loader-utils'),
-    generators = require('./generators');
+    getGenerators = require('./generators');
 
 module.exports = function(source) {
     this.cacheable && this.cacheable();
@@ -37,7 +37,8 @@ module.exports = function(source) {
         allPromises = [],
         unifyPath = path => path.replace(/\\/g, '/'),
         namingOptions = options.naming || 'react',
-        bemNaming = bn(namingOptions);
+        bemNaming = bn(namingOptions),
+        generators = getGenerators(options.generators);
 
     generators.i18n = require('./generators/i18n').generate(langs);
 
