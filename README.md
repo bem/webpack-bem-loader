@@ -36,6 +36,17 @@ In your `webpack.config.js`.
     //         naming: 'origin'
     //     }
     // },
+    // OR for a few entires:
+    // levels: [
+    //     [
+    //         './pathToEntryOneBlocks',
+    //         './pathToEntryOneOverrides'
+    //     ],
+    //     [
+    //         './pathToEntryTwoBlocks',
+    //         './pathToEntryTwoOverrides'
+    //     ]
+    // ],
     techs: ['js', 'css'],
     techMap: {
         js : ['react.js']
@@ -64,6 +75,17 @@ module: {
                 //         naming: 'origin'
                 //     }
                 // },
+                // OR for a few entires:
+                // levels: [
+                //     [
+                //         './pathToEntryOneBlocks',
+                //         './pathToEntryOneOverrides'
+                //     ],
+                //     [
+                //         './pathToEntryTwoBlocks',
+                //         './pathToEntryTwoOverrides'
+                //     ]
+                // ],
                 techs: ['js', 'css'],
                 techMap: {
                     js : ['react.js']
