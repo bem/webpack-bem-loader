@@ -41,7 +41,7 @@ module.exports = function(source) {
 
     generators.i18n = require('./generators/i18n').generate(langs);
 
-    const result = falafel(source, { sourceType: 'module' }, node => {
+    const result = falafel(source, { sourceType : 'module' }, node => {
         // match `require('b:button')`
         if(!(
             node.type === 'CallExpression' &&
