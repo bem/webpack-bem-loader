@@ -20,7 +20,9 @@ module.exports = function(source) {
     const callback = this.async(),
         options = Object.assign({}, this.options.bemLoader, loaderUtils.getOptions(this)),
         levelsMap = options.levels || bemConfig.levelMapSync(),
-        levels = Array.isArray(levelsMap) ? levelsMap : Object.keys(levelsMap),
+        casesOfLevels = Array.isArray(levelsMap)
+            ? levelsMap.length > 0 && levelsMap.every((level) => Array.isArray(level)) ? levelsMap : [levelsMap]
+            : [Object.keys(levelsMap)],
         techs = options.techs || ['js'],
         langs = options.langs || ['en'],
         techMap = techs.reduce((acc, tech) => {
@@ -59,7 +61,35 @@ module.exports = function(source) {
         )
         // expand entities by all provided levels
         .reduce((acc, entity) => {
-            levels.forEach(layer => {
+            let resourcePath = this.resourcePath;
+            let targetLevels = [];
+
+            if(casesOfLevels.length > 1) {
+                let validCasesOfLevels = casesOfLevels
+                    .filter((levels) => {
+                        return levels.some((layer) => {
+                            if(layer[layer.length - 1] !== path.sep) {
+                                layer += path.sep;
+                            }
+
+                            return resourcePath.indexOf(path.resolve(layer)) === 0;
+                        });
+                    });
+
+                if(validCasesOfLevels.length === 0) {
+                    this.emitError(`No valid levels for ${this.resourcePath}`);
+                } else {
+                    if(validCasesOfLevels.length > 1) {
+                        this.emitError(`Too many levels are valid for ${this.resourcePath}`);
+                    }
+
+                    targetLevels = validCasesOfLevels[0];
+                }
+            } else {
+                targetLevels = casesOfLevels[0];
+            }
+
+            targetLevels.forEach(layer => {
                 // if entity has tech get extensions for it or exactly it,
                 // otherwise expand entities by default extensions
                 (entity.tech? techMap[entity.tech] || [entity.tech] : defaultExts).forEach(tech => {
