@@ -51,7 +51,7 @@ In your `webpack.config.js`.
 module: {
     rules: [
         {
-            test : /\react.js$/,
+            test : /\.react\.js$/,
             loader: 'webpack-bem-loader',
             options: {
                 naming: 'react',
