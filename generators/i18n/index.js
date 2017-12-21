@@ -16,7 +16,8 @@ if (
 `;
 
 const langEnvErr = (env, langs) => `process.env.${env} && `
-    + `console.error('No match of process.env.${env} { ' + process.env.${env} + ' } in provided langs: { ${langs.join(', ')} }');`;
+    + `console.error('No match of process.env.${env} { ' + process.env.${env} + ' } `
+    + `in provided langs: { ${langs.join(', ')} }');`;
 
 const onlyDEV = strings => `
 if (process.env.NODE_ENV === 'development') {
@@ -29,7 +30,7 @@ function generateI18n(langs, files) {
     return files
         .reduce((acc, file) => {
             return acc.concat(langs.map(lang => strLang(file, lang)));
-        }, ['(function() {', `var core = require('${requiredPath(path.join(__dirname, "core"))}');`])
+        }, ['(function() {', `var core = require('${requiredPath(path.join(__dirname, 'core'))}');`])
         .concat([
             onlyDEV([
                 langEnvErr('BEM_LANG', langs),
