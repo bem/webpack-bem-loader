@@ -136,16 +136,26 @@ module.exports = function(source) {
                         });
                     });
 
-                    node.update(`(${
+                    const res = `(function () {\nvar exportJs, exportSmth;\n${
                         // Each tech has own generator
                         Object.keys(techToFiles)
-                            // js tech is always last
-                            .sort(a => extToTech[a] === 'js')
-                            .map(tech =>
-                                (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
-                            )
+                            // js tech is always first
+                            .sort(a => extToTech[a] !== 'js')
+                            .map(tech => {
+                                let str = (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech]);
+
+                                if(extToTech[tech] === 'js') {
+                                    str = `exportJs = ${str}`;
+                                } else {
+                                    str = `exportSmth = ${str}`;
+                                }
+
+                                return str;
+                            })
                             .join(',\n')
-                    })`);
+                        };\nreturn exportJs || exportSmth;\n}())`;
+
+                    node.update(res);
                 })
         );
     });
