@@ -94,12 +94,12 @@ module.exports = function(source) {
                 .all(existingEntitiesPromises)
                 .then(bemFiles => {
                     /**
-                     * techToFiles:
+                     * extToFiles:
                      *   js: [entity, entity]
                      *   css: [entity, entity, entity]
                      *   i18n: [entity]
                      */
-                    const techToFiles = {},
+                    const extToFiles = {},
                         existsEntities = {},
                         errEntities = {};
 
@@ -118,7 +118,7 @@ module.exports = function(source) {
                             return;
                         }
 
-                        (techToFiles[tech] || (techToFiles[tech] = [])).push(file);
+                        (extToFiles[tech] || (extToFiles[tech] = [])).push(file);
                         existsEntities[id] = true;
 
                         // Add existence for `_mod` if `_mod_val` exists.
@@ -136,26 +136,27 @@ module.exports = function(source) {
                         });
                     });
 
-                    const res = `(function () {\nvar exportJs, exportSmth;\n${
-                        // Each tech has own generator
-                        Object.keys(techToFiles)
-                            // js tech is always first
-                            .sort(a => extToTech[a] !== 'js')
-                            .map(tech => {
-                                let str = (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech]);
+                    let defaultTech;
 
-                                if(extToTech[tech] === 'js') {
-                                    str = `exportJs = ${str}`;
-                                } else {
-                                    str = `exportSmth = ${str}`;
-                                }
+                    // Each tech has own generator
+                    const res = Object.keys(extToFiles)
+                        // use techs from config for order
+                        // so the first one would be default, `js` in most cases
+                        .sort((a, b) => techs.indexOf(extToTech[a]) - techs.indexOf(extToTech[b]))
+                        .map((ext, i) => {
+                            const tech = extToTech[ext] || ext;
+                            i || (defaultTech = tech);
+                            return `exportObj['${tech}'] = ${(generators[tech] || generators['*'])(extToFiles[ext])};`;
+                        })
+                        .join('\n');
 
-                                return str;
-                            })
-                            .join(',\n')
-                        };\nreturn exportJs || exportSmth;\n}())`;
-
-                    node.update(res);
+                    node.update([
+                        '(function(exportObj) {',
+                        res,
+                        `exportObj.default = exportObj['${defaultTech}'];`,
+                        'return exportObj;',
+                        '}({ __esModule: true }))'
+                    ].join('\n'));
                 })
         );
     });
