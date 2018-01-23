@@ -136,27 +136,18 @@ module.exports = function(source) {
                         });
                     });
 
-                    let defaultTech;
-
                     // Each tech has own generator
                     const res = Object.keys(extToFiles)
                         // use techs from config for order
                         // so the first one would be default, `js` in most cases
                         .sort((a, b) => techs.indexOf(extToTech[a]) - techs.indexOf(extToTech[b]))
-                        .map((ext, i) => {
+                        .map((ext) => {
                             const tech = extToTech[ext] || ext;
-                            i || (defaultTech = tech);
-                            return `exportObj['${tech}'] = ${(generators[tech] || generators['*'])(extToFiles[ext])};`;
+                            return `${(generators[tech] || generators['*'])(extToFiles[ext])};`;
                         })
                         .join('\n');
 
-                    node.update([
-                        '(function(exportObj) {',
-                        res,
-                        `exportObj.default = exportObj['${defaultTech}'];`,
-                        'return exportObj;',
-                        '}({ __esModule: true }))'
-                    ].join('\n'));
+                    node.update(`(function() {var defTech = ${res} return defTech;})()`);
                 })
         );
     });
