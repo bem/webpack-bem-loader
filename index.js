@@ -143,11 +143,10 @@ module.exports = function(source) {
                         .sort((a, b) => techs.indexOf(extToTech[a]) - techs.indexOf(extToTech[b]))
                         .map((ext) => {
                             const tech = extToTech[ext] || ext;
-                            return `${(generators[tech] || generators['*'])(extToFiles[ext])};`;
-                        })
-                        .join('\n');
+                            return `${(generators[tech] || generators['*'])(extToFiles[ext])}`;
+                        });
 
-                    node.update(`(function() {var defTech = ${res} return defTech;})()`);
+                    node.update(`[${res.join(',')}][0]`);
                 })
         );
     });
