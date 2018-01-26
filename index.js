@@ -104,7 +104,7 @@ module.exports = function(source) {
                         errEntities = {};
 
                     bemFiles.forEach(file => {
-                        const tech = file.cell.tech,
+                        const ext = file.cell.tech,
                             entity = file.cell.entity,
                             block = entity.block,
                             elem = entity.elem,
@@ -118,7 +118,7 @@ module.exports = function(source) {
                             return;
                         }
 
-                        (extToFiles[tech] || (extToFiles[tech] = [])).push(file);
+                        (extToFiles[ext] || (extToFiles[ext] = [])).push(file);
                         existsEntities[id] = true;
 
                         // Add existence for `_mod` if `_mod_val` exists.
