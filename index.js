@@ -12,7 +12,7 @@ const path = require('path'),
     vow = require('vow'),
     vowFs = require('vow-fs'),
     loaderUtils = require('loader-utils'),
-    generators = require('./generators');
+    getGenerators = require('./generators');
 
 module.exports = function(source) {
     this.cacheable && this.cacheable();
@@ -37,7 +37,8 @@ module.exports = function(source) {
         allPromises = [],
         unifyPath = path => path.replace(/\\/g, '/'),
         namingOptions = options.naming || 'react',
-        bemNaming = bn(namingOptions);
+        bemNaming = bn(namingOptions),
+        generators = getGenerators(options.generators);
 
     generators.i18n = require('./generators/i18n').generate(langs);
 
@@ -93,17 +94,17 @@ module.exports = function(source) {
                 .all(existingEntitiesPromises)
                 .then(bemFiles => {
                     /**
-                     * techToFiles:
+                     * extToFiles:
                      *   js: [entity, entity]
                      *   css: [entity, entity, entity]
                      *   i18n: [entity]
                      */
-                    const techToFiles = {},
+                    const extToFiles = {},
                         existsEntities = {},
                         errEntities = {};
 
                     bemFiles.forEach(file => {
-                        const tech = file.cell.tech,
+                        const ext = file.cell.tech,
                             entity = file.cell.entity,
                             block = entity.block,
                             elem = entity.elem,
@@ -117,7 +118,7 @@ module.exports = function(source) {
                             return;
                         }
 
-                        (techToFiles[tech] || (techToFiles[tech] = [])).push(file);
+                        (extToFiles[ext] || (extToFiles[ext] = [])).push(file);
                         existsEntities[id] = true;
 
                         // Add existence for `_mod` if `_mod_val` exists.
@@ -135,16 +136,17 @@ module.exports = function(source) {
                         });
                     });
 
-                    node.update(`(${
-                        // Each tech has own generator
-                        Object.keys(techToFiles)
-                            // js tech is always last
-                            .sort(a => extToTech[a] === 'js')
-                            .map(tech =>
-                                (generators[extToTech[tech] || tech] || generators['*'])(techToFiles[tech])
-                            )
-                            .join(',\n')
-                    })`);
+                    // Each tech has own generator
+                    const res = Object.keys(extToFiles)
+                        // use techs from config for order
+                        // so the first one would be default, `js` in most cases
+                        .sort((a, b) => techs.indexOf(extToTech[a]) - techs.indexOf(extToTech[b]))
+                        .map((ext) => {
+                            const tech = extToTech[ext] || ext;
+                            return `${(generators[tech] || generators['*'])(extToFiles[ext])}`;
+                        });
+
+                    node.update(`[${res.join(',')}][0]`);
                 })
         );
     });
