@@ -77,8 +77,8 @@ module: {
 
 ## Options
 
-- __naming__: [bem-naming](https://en.bem.info/toolbox/sdk/bem-naming-entity/#naming-conventions) overrides
-- __levels__ <Array>: paths to components declarations
+- __levels__ <Array>: *Required option* — paths to components declarations
+- __naming__: [bem-naming](https://en.bem.info/toolbox/sdk/bem-naming-entity/#naming-conventions) overrides naming
 - __techs__ <Array>: list of techs extensions for require in runtime, `['js']` by default. First tech will be default export
 - __techMap__ <Object>: mapping of techs to extensions. Example: `{ 'js' : ['react.js', 'react.ts', 'react.es'], 'css' : ['post.css'] }`
 - __langs__ <Array>: list of langs in which resloves '.i18n' tech
