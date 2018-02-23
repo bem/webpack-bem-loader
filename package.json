@@ -23,9 +23,7 @@
     "bem-config": "^3.2.3",
     "falafel": "^2.1.0",
     "loader-utils": "1.1.0",
-    "required-path": "^1.0.1",
-    "vow": "^0.4.15",
-    "vow-fs": "^0.3.6"
+    "required-path": "^1.0.1"
   },
   "devDependencies": {
     "eslint": "^3.19.0"
