@@ -1,6 +1,6 @@
 {
     "parserOptions" : {
-        "ecmaVersion" : 6,
+        "ecmaVersion" : 8,
         "sourceType" : "module"
     },
     "rules" : {
@@ -33,7 +33,7 @@
         "array-bracket-spacing" : ["error", "never"],
         "func-call-spacing" : "error",
         "space-before-blocks" : ["error", "always"],
-        "quotes" : ["error", "single", { "avoidEscape" : true }],
+        "quotes" : ["error", "single", { "avoidEscape" : true, "allowTemplateLiterals": true }],
         "camelcase" : ["error", { "properties" : "never" }],
         "no-trailing-spaces" : "error",
         "comma-dangle" : ["error", "never"]

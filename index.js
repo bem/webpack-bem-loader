@@ -9,8 +9,6 @@ const path = require('path'),
     bemConfig = require('bem-config')(),
     requiredPath = require('required-path'),
     falafel = require('falafel'),
-    vow = require('vow'),
-    vowFs = require('vow-fs'),
     loaderUtils = require('loader-utils'),
     getGenerators = require('./generators');
 
@@ -76,21 +74,19 @@ module.exports = function(source) {
 
             this.addDependency(entityPath);
 
-            return vowFs
-                .exists(entityPath)
-                .then(exist => {
-                    // BemFile
-                    return {
-                        cell : bemCell,
-                        exist,
-                        // prepare path for require cause relative returns us string that we couldn't require
-                        path : unifyPath(requiredPath(path.relative(path.dirname(this.resourcePath), entityPath)))
-                    };
+            return new Promise(resolve => this.fs.stat(entityPath, err => {
+                // BemFile
+                resolve({
+                    cell : bemCell,
+                    exist : !err,
+                    // prepare path for require cause relative returns us string that we couldn't require
+                    path : unifyPath(requiredPath(path.relative(path.dirname(this.resourcePath), entityPath)))
                 });
+            }));
         });
 
         existingEntitiesPromises.length && allPromises.push(
-            vow
+            Promise
                 .all(existingEntitiesPromises)
                 .then(bemFiles => {
                     /**
@@ -151,7 +147,7 @@ module.exports = function(source) {
         );
     });
 
-    vow.all(allPromises)
+    Promise.all(allPromises)
         .then(() => callback(null, result.toString()))
         .catch(callback);
 };

@@ -12,7 +12,17 @@
   ],
   "license": "MPL-2.0",
   "scripts": {
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "jest",
+    "cover": "jest --coverage"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "index.js",
+      "generators/*.js",
+      "generators/i18n/index.js"
+    ]
   },
   "dependencies": {
     "@bem/cell": "^0.2.6",
@@ -23,11 +33,15 @@
     "bem-config": "^3.2.3",
     "falafel": "^2.1.0",
     "loader-utils": "1.1.0",
-    "required-path": "^1.0.1",
-    "vow": "^0.4.15",
-    "vow-fs": "^0.3.6"
+    "required-path": "^1.0.1"
   },
   "devDependencies": {
-    "eslint": "^3.19.0"
+    "common-tags": "^1.7.2",
+    "css-loader": "^0.28.10",
+    "eslint": "^3.19.0",
+    "extract-text-webpack-plugin": "^3.0.2",
+    "jest": "^22.4.0",
+    "memory-fs": "^0.4.1",
+    "webpack": "^3.11.0"
   }
 }
