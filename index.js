@@ -75,17 +75,14 @@ module.exports = function(source) {
             this.addDependency(entityPath);
 
             return new Promise(resolve => this.fs.stat(entityPath, err => {
-                return resolve(!err);
-            }))
-            .then(exist => {
                 // BemFile
-                return {
+                resolve({
                     cell : bemCell,
-                    exist,
+                    exist : !err,
                     // prepare path for require cause relative returns us string that we couldn't require
                     path : unifyPath(requiredPath(path.relative(path.dirname(this.resourcePath), entityPath)))
-                };
-            });
+                });
+            }));
         });
 
         existingEntitiesPromises.length && allPromises.push(

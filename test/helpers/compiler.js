@@ -30,9 +30,7 @@ module.exports = function(fixture, { config, mock }) {
         path : path.resolve('output'),
         filename : '[name].bundle.js'
     };
-
-    // webpack Config
-    config = {
+    const webpackConfig = {
         devtool : config.devtool || 'sourcemap',
         context : testDir,
         entry : `./${fixture}`,
@@ -41,7 +39,7 @@ module.exports = function(fixture, { config, mock }) {
         plugins : plugins(config)
     };
 
-    const compiler = webpack(config);
+    const compiler = webpack(webpackConfig);
 
     const fs = new MemoryFS();
 

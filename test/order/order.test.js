@@ -56,22 +56,19 @@ describe('order', () => {
 
         const cssFile = assets['_index.css'];
         expect(getOrder(cssFile)).toEqual([0, 1]);
-        expect(cssFile).toMatchSnapshot();
     });
 
     test('order of modifiers', async () => {
         const mock = {
             'index.js' : `require('b:button m:theme=normal|action m:size=m')`,
-            'common.blocks' : {
-                'button' : {
-                    'button.css' : `.button { order: 0 }\n`,
-                    '_theme' : {
-                        'button_theme_normal.css' : `.button_theme_normal { order: 1 }\n`,
-                        'button_theme_action.css' : `.button_theme_action { order: 2 }\n`
-                    },
-                    '_size' : {
-                        'button_size_m.css' : `.button_size_m, { order: 3 }\n`
-                    }
+            'common.blocks/button' : {
+                'button.css' : `.button { order: 0 }\n`,
+                '_theme' : {
+                    'button_theme_normal.css' : `.button_theme_normal { order: 1 }\n`,
+                    'button_theme_action.css' : `.button_theme_action { order: 2 }\n`
+                },
+                '_size' : {
+                    'button_size_m.css' : `.button_size_m, { order: 3 }\n`
                 }
             }
         };
@@ -79,24 +76,21 @@ describe('order', () => {
 
         const cssFile = assets['_index.css'];
         expect(getOrder(cssFile)).toEqual([0, 1, 2, 3]);
-        expect(cssFile).toMatchSnapshot();
     });
 
     // TODO: https://github.com/bem/webpack-bem-loader/issues/64
     test.skip('order of modifiers required inside block', async () => {
         const mock = {
             'index.js' : `require('b:button m:theme=action m:size=m')`,
-            'common.blocks' : {
-                'button' : {
-                    'button.css' : `.button { order: 0 }\n`,
-                    'button.js' : `require('m:theme=normal')`,
-                    '_theme' : {
-                        'button_theme_normal.css' : `.button_theme_normal { order: 1 }\n`,
-                        'button_theme_action.css' : `.button_theme_action { order: 2 }\n`
-                    },
-                    '_size' : {
-                        'button_size_m.css' : `.button_size_m, { order: 3 }\n`
-                    }
+            'common.blocks/button' : {
+                'button.css' : `.button { order: 0 }\n`,
+                'button.js' : `require('m:theme=normal')`,
+                '_theme' : {
+                    'button_theme_normal.css' : `.button_theme_normal { order: 1 }\n`,
+                    'button_theme_action.css' : `.button_theme_action { order: 2 }\n`
+                },
+                '_size' : {
+                    'button_size_m.css' : `.button_size_m, { order: 3 }\n`
                 }
             }
         };
@@ -104,6 +98,5 @@ describe('order', () => {
 
         const cssFile = assets['_index.css'];
         expect(getOrder(cssFile)).toEqual([0, 1, 2, 3]);
-        expect(cssFile).toMatchSnapshot();
     });
 });

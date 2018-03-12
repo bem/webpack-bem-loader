@@ -20,7 +20,7 @@ const path = require('path');
 const createFile = (fs, path, content) => fs.writeFileSync(path, content);
 const createDir = (fs, path) => fs.mkdirpSync(path);
 
-function popuplate(fs, paths, currentDir) {
+function populate(fs, paths, currentDir) {
     Object.keys(paths).forEach(pathKey => {
         const curPath = path.join(currentDir, pathKey);
         const content = paths[pathKey];
@@ -28,7 +28,7 @@ function popuplate(fs, paths, currentDir) {
             createFile(fs, curPath, content);
         } else {
             createDir(fs, curPath);
-            popuplate(fs, content, curPath);
+            populate(fs, content, curPath);
         }
     });
 }
@@ -43,7 +43,7 @@ function popuplateBase(fs, dir) {
 function mock(fs, paths, currentDir=process.cwd()) {
     popuplateBase(fs, currentDir);
     createDir(fs, currentDir);
-    popuplate(fs, paths, currentDir);
+    populate(fs, paths, currentDir);
 }
 
 module.exports = fs => mock.bind(mock, fs);

@@ -36,6 +36,7 @@
     "required-path": "^1.0.1"
   },
   "devDependencies": {
+    "common-tags": "^1.7.2",
     "css-loader": "^0.28.10",
     "eslint": "^3.19.0",
     "extract-text-webpack-plugin": "^3.0.2",

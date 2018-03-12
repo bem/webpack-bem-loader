@@ -1,8 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Options levels common/desktop 1`] = `
-"[(
-require('./common.blocks/button/button.js'),
-(require('./desktop.blocks/button/button.js').default || require('./desktop.blocks/button/button.js')).applyDecls()
-)][0]"
-`;
