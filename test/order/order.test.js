@@ -78,8 +78,7 @@ describe('order', () => {
         expect(getOrder(cssFile)).toEqual([0, 1, 2, 3]);
     });
 
-    // TODO: https://github.com/bem/webpack-bem-loader/issues/64
-    test.skip('order of modifiers required inside block', async () => {
+    test('order of modifiers required inside block', async () => {
         const mock = {
             'index.js' : `require('b:button m:theme=action m:size=m')`,
             'common.blocks/button' : {
