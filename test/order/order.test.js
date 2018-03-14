@@ -1,4 +1,5 @@
 const path = require('path');
+const nodeEval = require('node-eval');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const webpack = require('../helpers/compiler');
@@ -11,6 +12,29 @@ const getOrder = str => {
         res.push(Number(match[1]));
     }
     return res;
+};
+
+const checkCycledRequires = bundle => {
+    let result = true;
+    const webpackModules = [];
+    const webpackJsonp = (first, second) => {
+        second.forEach(webpackModule => webpackModules.push(webpackModule));
+    };
+    const webpackRequire = function(moduleIndex, moduleId) {
+        // check that modules are not required inside themselves
+        moduleIndex === moduleId && (result = false);
+    };
+
+    // module.exports for faster executing
+    nodeEval(`module.exports = ` + bundle, 'main.bundle.js', { webpackJsonp });
+
+    webpackModules.forEach((webpackModule, moduleIndex) => {
+        try {
+            webpackModule({}, {}, webpackRequire.bind(webpackRequire, moduleIndex));
+        } catch(e) { }
+    });
+
+    return result;
 };
 
 const config = {
@@ -35,6 +59,19 @@ const config = {
         })
     }],
     plugins : new ExtractTextPlugin('_index.css')
+};
+
+const jsConfig = {
+    rules : [{
+        test : /\.js$/,
+        use : {
+            loader : path.resolve(__dirname, '../..'),
+            options : {
+                levels : ['common.blocks'],
+                techs : ['js']
+            }
+        }
+    }]
 };
 
 describe('order', () => {
@@ -78,7 +115,7 @@ describe('order', () => {
         expect(getOrder(cssFile)).toEqual([0, 1, 2, 3]);
     });
 
-    test('order of modifiers required inside block', async () => {
+    test('css: order of modifiers required inside block', async () => {
         const mock = {
             'index.js' : `require('b:button m:theme=action m:size=m')`,
             'common.blocks/button' : {
@@ -97,5 +134,24 @@ describe('order', () => {
 
         const cssFile = assets['_index.css'];
         expect(getOrder(cssFile)).toEqual([0, 1, 2, 3]);
+    });
+
+    test('js: order of modifiers required inside block', async () => {
+        const mock = {
+            'index.js' : `require('b:button m:theme=action m:size=m')`,
+            'common.blocks/button' : {
+                'button.js' : `require('m:theme=normal')`,
+                '_theme' : {
+                    'button_theme_normal.js' : `'_theme' + '_normal')`
+                },
+                '_size' : {
+                    'button_size_m.js' : `'_theme' + '_size')`
+                }
+            }
+        };
+        const { assets } = await webpack('index.js', { config : jsConfig, mock });
+
+        const jsFile = assets['main.bundle.js'];
+        expect(checkCycledRequires(jsFile)).toBe(true);
     });
 });

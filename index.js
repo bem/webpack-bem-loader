@@ -36,6 +36,8 @@ module.exports = function(source) {
         unifyPath = path => path.replace(/\\/g, '/'),
         namingOptions = options.naming || 'react',
         bemNaming = bn(namingOptions),
+        // https://github.com/bem-sdk/bem-fs-scheme/issues/18
+        currentEntity = bemNaming.parse(path.basename(this.resourcePath).split('.')[0]),
         generators = getGenerators(options.generators);
 
     generators.i18n = require('./generators/i18n').generate(langs);
@@ -51,9 +53,7 @@ module.exports = function(source) {
 
         const existingEntitiesPromises = bemImport.parse(
             node.arguments[0].value,
-            // FIXME: we really need this context for parsing import?
-            // https://github.com/bem-sdk/bem-fs-scheme/issues/18
-            bemNaming.parse(path.basename(this.resourcePath).split('.')[0])
+            currentEntity
         )
         // expand entities by all provided levels
         .reduce((acc, entity) => {
@@ -61,7 +61,11 @@ module.exports = function(source) {
                 // if entity has tech get extensions for it or exactly it,
                 // otherwise expand entities by default extensions
                 (entity.tech? techMap[entity.tech] || [entity.tech] : defaultExts).forEach(tech => {
-                    acc.push(BemCell.create({ entity, tech, layer }));
+                    // don't push js block in context of block itself
+                    // so we forewarn cycled requires
+                    // example ``` block.react.js:  import 'm:autoclosable=yes' ```
+                    !(currentEntity.isEqual(BemEntityName.create(entity)) && tech === 'js') &&
+                        acc.push(BemCell.create({ entity, tech, layer }));
                 });
             });
             return acc;
