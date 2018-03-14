@@ -23,15 +23,14 @@ const checkCycledRequires = bundle => {
     const webpackRequire = function(moduleIndex, moduleId) {
         // check that modules are not required inside themselves
         moduleIndex === moduleId && (result = false);
+        return { applyDecls : () => {} };
     };
 
     // module.exports for faster executing
     nodeEval(`module.exports = ` + bundle, 'main.bundle.js', { webpackJsonp });
 
     webpackModules.forEach((webpackModule, moduleIndex) => {
-        try {
-            webpackModule({}, {}, webpackRequire.bind(webpackRequire, moduleIndex));
-        } catch(e) { }
+        webpackModule({}, {}, webpackRequire.bind(webpackRequire, moduleIndex));
     });
 
     return result;
@@ -142,10 +141,10 @@ describe('order', () => {
             'common.blocks/button' : {
                 'button.js' : `require('m:theme=normal')`,
                 '_theme' : {
-                    'button_theme_normal.js' : `'_theme' + '_normal')`
+                    'button_theme_normal.js' : `('_theme' + '_normal')`
                 },
                 '_size' : {
-                    'button_size_m.js' : `'_theme' + '_size')`
+                    'button_size_m.js' : `('_theme' + '_size')`
                 }
             }
         };
