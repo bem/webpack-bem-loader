@@ -15,17 +15,17 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@bem/cell": "^0.2.6",
-    "@bem/entity-name": "^1.5.0",
-    "@bem/fs-scheme": "^2.1.0",
-    "@bem/import-notation": "^1.1.2",
-    "@bem/naming": "^2.0.0-6",
-    "bem-config": "^3.2.3",
-    "falafel": "^2.1.0",
+    "@bem/cell": "0.2.6",
+    "@bem/entity-name": "1.5.0",
+    "@bem/fs-scheme": "2.1.0",
+    "@bem/import-notation": "1.1.2",
+    "@bem/naming": "2.0.0-6",
+    "bem-config": "3.2.3",
+    "falafel": "2.1.0",
     "loader-utils": "1.1.0",
-    "required-path": "^1.0.1",
-    "vow": "^0.4.15",
-    "vow-fs": "^0.3.6"
+    "required-path": "1.0.1",
+    "vow": "0.4.15",
+    "vow-fs": "0.3.6"
   },
   "devDependencies": {
     "eslint": "^3.19.0"
