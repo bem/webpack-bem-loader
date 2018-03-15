@@ -153,4 +153,17 @@ describe('order', () => {
         const jsFile = assets['main.bundle.js'];
         expect(checkCycledRequires(jsFile)).toBe(true);
     });
+
+    test('js: order no conflicts inside gemini.bemjson.js', async () => {
+        const mock = {
+            'gemini.bemjson.js' : `require('b:gemini')`,
+            'common.blocks/gemini' : {
+                'gemini.js' : `(1 + 1)`
+            }
+        };
+        const { assets } = await webpack('gemini.bemjson.js', { config : jsConfig, mock });
+
+        const jsFile = assets['main.bundle.js'];
+        expect(checkCycledRequires(jsFile)).toBe(true);
+    });
 });
