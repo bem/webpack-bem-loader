@@ -37,7 +37,9 @@ module.exports = function(source) {
         namingOptions = options.naming || 'react',
         bemNaming = bn(namingOptions),
         // https://github.com/bem-sdk/bem-fs-scheme/issues/18
-        currentEntity = bemNaming.parse(path.basename(this.resourcePath).split('.')[0]),
+        currentEntityName = path.basename(this.resourcePath),
+        currentEntity = bemNaming.parse(currentEntityName.split('.')[0]),
+        currentEntityTech = extToTech[currentEntityName.substr(currentEntityName.indexOf('.') + 1)],
         generators = getGenerators(options.generators);
 
     generators.i18n = require('./generators/i18n').generate(langs);
@@ -55,18 +57,23 @@ module.exports = function(source) {
             node.arguments[0].value,
             currentEntity
         )
-        // expand entities by all provided levels
+        // expand entities by all provided levels/techs
         .reduce((acc, entity) => {
-            levels.forEach(layer => {
-                // if entity has tech get extensions for it or exactly it,
-                // otherwise expand entities by default extensions
-                (entity.tech? techMap[entity.tech] || [entity.tech] : defaultExts).forEach(tech => {
-                    // don't push js block in context of block itself
-                    // so we forewarn cycled requires
-                    // example ``` block.react.js:  import 'm:autoclosable=yes' ```
-                    !(currentEntity.isEqual(BemEntityName.create(entity)) && tech === 'js') &&
+            // if entity has tech get extensions for it or exactly it,
+            // otherwise expand entities by default extensions
+            (entity.tech? techMap[entity.tech] || [entity.tech] : defaultExts).forEach(tech => {
+                // don't push js block in context of block itself
+                // so we forewarn cycled requires
+                // example ``` block.react.js:  import 'm:autoclosable=yes' ```
+                if(!(
+                    currentEntity.isEqual(BemEntityName.create(entity)) &&
+                    currentEntityTech === 'js' &&
+                    extToTech[tech] === 'js'
+                )) {
+                    levels.forEach(layer => {
                         acc.push(BemCell.create({ entity, tech, layer }));
-                });
+                    });
+                }
             });
             return acc;
         }, [])
