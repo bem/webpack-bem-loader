@@ -80,8 +80,11 @@ module.exports = function(source) {
         // find path for every entity and check it existance
         .map(bemCell => {
             const localNamingOpts = (levelsMap[bemCell.layer] && levelsMap[bemCell.layer].naming) || namingOptions;
+            console.log('\n\n\n======\n\n\n');
+            console.log(localNamingOpts);
             const fsScheme = (levelsMap[bemCell.layer] && levelsMap[bemCell.layer].scheme) || 'nested';
             const entityPath = path.resolve(bemFs(fsScheme).path(bemCell, localNamingOpts));
+            console.log(entityPath);
 
             this.addDependency(entityPath);
 
@@ -137,10 +140,14 @@ module.exports = function(source) {
                     });
 
                     Object.keys(existsEntities).forEach(fileId => {
+                        console.log('fileId', fileId);
                         // check if entity has no tech to resolve
                         existsEntities[fileId] || errEntities[fileId].forEach(file => {
                             this.emitError(`BEM module not found: ${file.path}`);
                         });
+                        console.log('existsEntities', existsEntities);
+                        console.log('errEntities', errEntities);
+                        console.log('\n\n\n======\n\n\n');
                     });
 
                     // Each tech has own generator
