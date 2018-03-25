@@ -16,7 +16,7 @@ module.exports = function(source) {
     this.cacheable && this.cacheable();
 
     const callback = this.async(),
-        options = Object.assign({}, this.options.bemLoader, loaderUtils.getOptions(this)),
+        options = Object.assign({}, (this.options && this.options.bemLoader || {}), loaderUtils.getOptions(this)),
         levelsMap = options.levels || bemConfig.levelMapSync(),
         levels = Array.isArray(levelsMap) ? levelsMap : Object.keys(levelsMap),
         techs = options.techs || ['js'],
