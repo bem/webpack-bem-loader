@@ -153,7 +153,7 @@ module.exports = function(source) {
                             return `${(generators[tech] || generators['*'])(extToFiles[ext])}`;
                         });
 
-                    node.update(`[${res.join(',')}][0]`);
+                    node.update(`;[${res.join(',')}][0]`);
                 })
         );
     });
