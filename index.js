@@ -12,7 +12,7 @@ const path = require('path'),
     loaderUtils = require('loader-utils'),
     getGenerators = require('./generators');
 
-module.exports = function(source) {
+module.exports = function(source, inputSourceMap) {
     this.cacheable && this.cacheable();
 
     const callback = this.async(),
@@ -159,6 +159,6 @@ module.exports = function(source) {
     });
 
     Promise.all(allPromises)
-        .then(() => callback(null, result.toString()))
+        .then(() => callback(null, result.toString(), inputSourceMap))
         .catch(callback);
 };
