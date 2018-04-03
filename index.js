@@ -10,12 +10,14 @@ const path = require('path'),
     requiredPath = require('required-path'),
     falafel = require('falafel'),
     loaderUtils = require('loader-utils'),
-    getGenerators = require('./generators');
+    getGenerators = require('./generators'),
+    updateSourceMapOffsets = require('./source-map-utils');
 
 module.exports = function(source, inputSourceMap) {
     this.cacheable && this.cacheable();
 
     const callback = this.async(),
+        sourceMapsEnabled = Boolean(this.options.devtool),
         options = Object.assign({}, this.options.bemLoader, loaderUtils.getOptions(this)),
         levelsMap = options.levels || bemConfig.levelMapSync(),
         levels = Array.isArray(levelsMap) ? levelsMap : Object.keys(levelsMap),
@@ -44,7 +46,13 @@ module.exports = function(source, inputSourceMap) {
 
     generators.i18n = require('./generators/i18n').generate(langs);
 
-    const result = falafel(source, { ecmaVersion : 8, sourceType : 'module' }, node => {
+    const modifiedNodes = [];
+    const parserOptions = {
+        ecmaVersion : 8,
+        sourceType : 'module',
+        locations : sourceMapsEnabled
+    };
+    const result = falafel(source, parserOptions, node => {
         // match `require('b:button')`
         if(!(
             node.type === 'CallExpression' &&
@@ -154,11 +162,16 @@ module.exports = function(source, inputSourceMap) {
                         });
 
                     node.update(`[${res.join(',')}][0]`);
+                    modifiedNodes.push(node);
                 })
         );
     });
 
     Promise.all(allPromises)
-        .then(() => callback(null, result.toString(), inputSourceMap))
+        .then(() => {
+            const updatedSourceMap = sourceMapsEnabled && inputSourceMap ?
+                updateSourceMapOffsets(inputSourceMap, modifiedNodes) : inputSourceMap;
+            callback(null, result.toString(), updatedSourceMap);
+        })
         .catch(callback);
 };
