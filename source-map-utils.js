@@ -1,5 +1,7 @@
 const SourceMapConsumer = require('source-map').SourceMapConsumer,
-    SourceMapGenerator = require('source-map').SourceMapGenerator;
+    SourceMapGenerator = require('source-map').SourceMapGenerator,
+    loaderUtils = require('loader-utils'),
+    path = require('path');
 
 // NOTE: taken from source-map/util.js
 /**
@@ -47,15 +49,29 @@ function relative(aRoot, aPath) {
  * Take a raw source map from previous loader and apply adjustments related to the modifications
  * made to `modifiedNodes`. Each node in `modifiedNodes` is expected to have 'loc' entry containing
  * the original source's coordinates, while the transformed source is retrieved via node.source().
+ * @param {string} source
  * @param {Object} inputSourceMap
  * @param {Array} modifiedNodes
  * @returns {Object}
  */
-function updateSourceMapOffsets(inputSourceMap, modifiedNodes) {
-    const sourceMapConsumer = new SourceMapConsumer(inputSourceMap);
-    const sourceRoot = sourceMapConsumer.sourceRoot;
+function updateSourceMapOffsets(source, inputSourceMap, modifiedNodes) {
+    const webpackRemainingChain = loaderUtils.getRemainingRequest(this).split('!');
+    const filename = webpackRemainingChain[webpackRemainingChain.length - 1];
+    let sourceMapConsumer, sourceRoot, sourceFile, sourcesContent;
+
+    if(inputSourceMap) {
+        sourceMapConsumer = new SourceMapConsumer(inputSourceMap);
+        sourceRoot = sourceMapConsumer.sourceRoot;
+        sourceFile = sourceMapConsumer.file;
+        sourcesContent = inputSourceMap.sourcesContent;
+    } else {
+        sourceFile = path.basename(filename);
+        sourceRoot = process.cwd();
+        sourcesContent = [source];
+    }
+
     const sourceMapGenerator = new SourceMapGenerator({
-        file : sourceMapConsumer.file,
+        file : sourceFile,
         sourceRoot : sourceRoot
     });
 
@@ -100,23 +116,45 @@ function updateSourceMapOffsets(inputSourceMap, modifiedNodes) {
     let lineOffset = 0;
     let currentNode = modifiedNodes.shift();
 
-    sourceMapConsumer.eachMapping((inputMapping) => {
-        copyMapping(inputMapping, lineOffset);
-        if(currentNode && currentNode.loc.start.line === inputMapping.generatedLine) {
-            // When one-line require() is expanded into N require()-s, each new generated line
-            // should point to the original one-liner. We don't care about column transformations
-            // since there is one import/require per line.
+    if(sourceMapConsumer) {
+        sourceMapConsumer.eachMapping((inputMapping) => {
+            copyMapping(inputMapping, lineOffset);
+            if(currentNode && currentNode.loc.start.line === inputMapping.generatedLine) {
+                // When one-line require() is expanded into N require()-s, each new generated line
+                // should point to the original one-liner. We don't care about column transformations
+                // since there is one import/require per line.
+                let additionalLines = currentNode.source().split('\n').length - 1;
+                while(additionalLines > 0) {
+                    lineOffset++;
+                    copyMapping(inputMapping, lineOffset);
+                    additionalLines--;
+                }
+                currentNode = modifiedNodes.shift();
+            }
+        });
+    } else {
+        while(currentNode) {
             let additionalLines = currentNode.source().split('\n').length - 1;
             while(additionalLines > 0) {
                 lineOffset++;
-                copyMapping(inputMapping, lineOffset);
+                sourceMapGenerator.addMapping({
+                    original : {
+                        line : currentNode.loc.start.line,
+                        column : currentNode.loc.start.column
+                    },
+                    generated : {
+                        line : currentNode.loc.start.line + lineOffset,
+                        column : currentNode.loc.start.column
+                    },
+                    source : relative(sourceRoot, filename)
+                });
                 additionalLines--;
             }
             currentNode = modifiedNodes.shift();
         }
-    });
+    }
 
-    return Object.assign({}, sourceMapGenerator.toJSON(), { sourcesContent : inputSourceMap.sourcesContent });
+    return Object.assign({}, sourceMapGenerator.toJSON(), { sourcesContent : sourcesContent });
 }
 
 module.exports = updateSourceMapOffsets;

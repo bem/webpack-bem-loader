@@ -17,7 +17,6 @@ module.exports = function(source, inputSourceMap) {
     this.cacheable && this.cacheable();
 
     const callback = this.async(),
-        sourceMapsEnabled = Boolean(this.options.devtool),
         options = Object.assign({}, this.options.bemLoader, loaderUtils.getOptions(this)),
         levelsMap = options.levels || bemConfig.levelMapSync(),
         levels = Array.isArray(levelsMap) ? levelsMap : Object.keys(levelsMap),
@@ -50,7 +49,7 @@ module.exports = function(source, inputSourceMap) {
     const parserOptions = {
         ecmaVersion : 8,
         sourceType : 'module',
-        locations : sourceMapsEnabled
+        locations : this.sourceMap
     };
     const result = falafel(source, parserOptions, node => {
         // match `require('b:button')`
@@ -169,9 +168,12 @@ module.exports = function(source, inputSourceMap) {
 
     Promise.all(allPromises)
         .then(() => {
-            const updatedSourceMap = sourceMapsEnabled && inputSourceMap ?
-                updateSourceMapOffsets(inputSourceMap, modifiedNodes) : inputSourceMap;
-            callback(null, result.toString(), updatedSourceMap);
+            const sourceMap = this.sourceMap ?
+                updateSourceMapOffsets.call(this, source, inputSourceMap, modifiedNodes) : undefined;
+            //if(inputSourceMap.file === 'AttributesButton.js') {
+            //    console.log('\n', source, '\n', result.toString(), '\n');
+            //}
+            callback(null, result.toString(), sourceMap);
         })
         .catch(callback);
 };
