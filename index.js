@@ -9,8 +9,12 @@ const path = require('path'),
     bemConfig = require('bem-config')(),
     requiredPath = require('required-path'),
     falafel = require('falafel'),
+    acorn = require('acorn'),
+    injectDynamicImportSupport = require('acorn-dynamic-import/lib/inject').default,
     loaderUtils = require('loader-utils'),
     getGenerators = require('./generators');
+
+injectDynamicImportSupport(acorn);
 
 module.exports = function(source, inputSourceMap) {
     this.cacheable && this.cacheable();
@@ -44,7 +48,15 @@ module.exports = function(source, inputSourceMap) {
 
     generators.i18n = require('./generators/i18n').generate(langs);
 
-    const result = falafel(source, { ecmaVersion : 8, sourceType : 'module' }, node => {
+    const falafelOptions = {
+        ecmaVersion : 8,
+        sourceType : 'module',
+        parser : acorn,
+        plugins : {
+            dynamicImport : true
+        }
+    };
+    const result = falafel(source, falafelOptions, node => {
         // match `require('b:button')`
         if(!(
             node.type === 'CallExpression' &&
