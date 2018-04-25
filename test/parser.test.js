@@ -4,7 +4,7 @@ describe('Parser', () => {
     test('dynamic import()', async () => {
         const mock = {
             'index.js' : `const test = import('./module.js')`,
-            'module.js' : 'export null'
+            'module.js' : 'export default null'
         };
         const config = {
             loader : {
