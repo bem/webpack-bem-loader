@@ -1,5 +1,7 @@
-const webpack = require('../helpers/compiler');
 const { stripIndents } = require('common-tags');
+
+const webpack = require('../helpers/compiler');
+const getModuleById = require('../helpers/getModuleById');
 
 describe('Options', () => {
     describe('techs && techMap', () => {
@@ -30,7 +32,7 @@ describe('Options', () => {
             };
 
             const { stats } = await webpack('index.ts', { config, mock });
-            const { source } = stats.toJson().modules[1];
+            const { source } = getModuleById(stats, 'index.ts');
 
             /* eslint-disable max-len */
             expect(source).toBe(stripIndents`[(
@@ -68,7 +70,7 @@ describe('Options', () => {
             };
 
             const { stats } = await webpack('index.ts', { config, mock });
-            const { source } = stats.toJson().modules[2];
+            const { source } = getModuleById(stats, 'index.ts');
 
             console.log(source);
         });
@@ -96,7 +98,7 @@ describe('Options', () => {
             };
 
             const { stats } = await webpack('index.ts', { config, mock });
-            const { source } = stats.toJson().modules[2];
+            const { source } = getModuleById(stats, 'index.ts');
 
             console.log(source);
         });
@@ -123,7 +125,7 @@ describe('Options', () => {
             };
 
             const { stats } = await webpack('index.js', { config, mock });
-            const { source } = stats.toJson().modules[1];
+            const { source } = getModuleById(stats, 'index.js');
 
             /* eslint-disable max-len */
             expect(source).toBe(stripIndents`[(

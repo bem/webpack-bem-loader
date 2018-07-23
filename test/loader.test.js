@@ -1,5 +1,7 @@
-const webpack = require('./helpers/compiler');
 const { stripIndents } = require('common-tags');
+
+const webpack = require('./helpers/compiler');
+const getModuleById = require('./helpers/getModuleById');
 
 describe('Loader', () => {
     test('Defaults', async () => {
@@ -20,7 +22,7 @@ describe('Loader', () => {
         };
 
         const { stats } = await webpack('index.js', { config, mock });
-        const { source } = stats.toJson().modules[1];
+        const { source } = getModuleById(stats, 'index.js');
 
         /* eslint-disable max-len */
         expect(source).toBe(stripIndents`[(

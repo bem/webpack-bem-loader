@@ -2,6 +2,8 @@ const path = require('path');
 const webpack = require('webpack');
 const MemoryFS = require('memory-fs');
 
+const { version } = webpack;
+
 const mockFS = require('./mock-fs');
 
 const _module = config => {
@@ -16,13 +18,38 @@ const _module = config => {
     };
 };
 
-const plugins = config => ([
-    new webpack.optimize.CommonsChunkPlugin({
-        name : ['runtime'],
-        minChunks : Infinity
-    })
-].concat(config.plugins || []));
+const optimize = config => {
+    if(Number(version[0]) >= 4) {
+        config.optimization = config.optimization || {
+            namedChunks : true,
+            namedModules : true,
+            runtimeChunk : true,
+            occurrenceOrder : true
+        };
+    }
 
+    return config;
+};
+
+const plugins = config =>
+    [
+        Number(version[0]) >= 4
+            ? false
+            : new webpack.optimize.CommonsChunkPlugin({
+                names : ['runtime'],
+                minChunks : Infinity
+            })
+    ]
+    .concat(config.plugins || [])
+    .filter(Boolean);
+
+const mode = config => {
+    if(Number(version[0]) >= 4) {
+        config.mode = config.mode || 'development';
+    }
+
+    return config;
+};
 
 module.exports = function(fixture, { config, mock }) {
     const testDir = process.cwd();
@@ -31,13 +58,21 @@ module.exports = function(fixture, { config, mock }) {
         filename : '[name].bundle.js'
     };
     const webpackConfig = {
-        devtool : config.devtool || 'sourcemap',
+        devtool : config.devtool || false,
         context : testDir,
         entry : `./${fixture}`,
         output,
         module : _module(config),
-        plugins : plugins(config)
+        plugins : plugins(config),
+        resolve : {
+            extensions : ['.ts', '.tsx', '.js', '.jsx', '.json']
+        }
     };
+
+    mode(webpackConfig);
+
+    // Compiler Optimizations
+    optimize(webpackConfig);
 
     const compiler = webpack(webpackConfig);
 
@@ -46,11 +81,23 @@ module.exports = function(fixture, { config, mock }) {
     compiler.outputFileSystem = fs;
 
     if(mock) {
+        // I don't know why wepack4 need this
+        // ~ 1 hour lost here
+        mock['index.js'] || (mock['index.js'] = 'Fuck webpack 4');
+
         mockFS(fs)(mock, testDir);
         // HACK for css-loader cause it's stupid
         mockFS(fs)({
-            'node_modules/css-loader/lib' : {
-                'css-base.js' : require('fs').readFileSync('node_modules/css-loader/lib/css-base.js')
+            'node_modules/css-loader' : {
+                'index.js' : require('fs').readFileSync('node_modules/css-loader/index.js'),
+                'lib' : {
+                    'css-base.js' : require('fs').readFileSync('node_modules/css-loader/lib/css-base.js')
+                }
+            }
+        });
+        mockFS(fs)({
+            'node_modules/mini-css-extract-plugin/dist' : {
+                'loader.js' : require('fs').readFileSync('node_modules/mini-css-extract-plugin/dist/loader.js')
             }
         });
 

@@ -1,6 +1,6 @@
 const path = require('path');
 const nodeEval = require('node-eval');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const webpack = require('../helpers/compiler');
 
@@ -27,7 +27,7 @@ const checkCycledRequires = bundle => {
     };
 
     // module.exports for faster executing
-    nodeEval(`module.exports = ` + bundle, 'main.bundle.js', { webpackJsonp });
+    nodeEval(`module.exports = ` + bundle, 'main.bundle.js', { webpackJsonp, 'window' : {} });
 
     webpackModules.forEach((webpackModule, moduleIndex) => {
         webpackModule({}, {}, webpackRequire.bind(webpackRequire, moduleIndex));
@@ -51,13 +51,15 @@ const config = {
         }
     }, {
         test : /\.css$/,
-        use : ExtractTextPlugin.extract({
-            use : [{
-                loader : 'css-loader'
-            }]
-        })
+        use : [
+            MiniCssExtractPlugin.loader,
+            'css-loader'
+        ]
     }],
-    plugins : new ExtractTextPlugin('_index.css')
+    plugins : new MiniCssExtractPlugin({
+        filename : '_index.css',
+        chunkFilename : '_index.css'
+    })
 };
 
 const jsConfig = {
