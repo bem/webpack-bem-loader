@@ -1,5 +1,7 @@
 'use strict';
 
+const SHOW_MISSING = process.env.SHOW_MISSING;
+
 const path = require('path'),
     bn = require('@bem/naming'),
     BemCell = require('@bem/cell'),
@@ -137,10 +139,10 @@ module.exports = function(source, inputSourceMap) {
                             (existsEntities[BemEntityName.create({ block, elem }).id] = true);
                     });
 
-                    Object.keys(existsEntities).forEach(fileId => {
+                    SHOW_MISSING && Object.keys(existsEntities).forEach(fileId => {
                         // check if entity has no tech to resolve
                         existsEntities[fileId] || errEntities[fileId].forEach(file => {
-                            this.emitError(`BEM module not found: ${file.path}`);
+                            this.emitWarning(`BEM module not found: ${file.path}`);
                         });
                     });
 
