@@ -12,7 +12,8 @@ const path = require('path'),
     requiredPath = require('required-path'),
     falafel = require('falafel'),
     loaderUtils = require('loader-utils'),
-    getGenerators = require('./generators');
+    getGenerators = require('./generators'),
+    updateSourceMapOffsets = require('./source-map-utils');
 
 module.exports = function(source, inputSourceMap) {
     this.cacheable && this.cacheable();
@@ -47,7 +48,13 @@ module.exports = function(source, inputSourceMap) {
 
     generators.i18n = require('./generators/i18n').generate(langs);
 
-    const result = falafel(source, { ecmaVersion : 8, sourceType : 'module' }, node => {
+    const modifiedNodes = [];
+    const parserOptions = {
+        ecmaVersion : 8,
+        sourceType : 'module',
+        locations : this.sourceMap
+    };
+    const result = falafel(source, parserOptions, node => {
         // match `require('b:button')`
         if(!(
             node.type === 'CallExpression' &&
@@ -157,11 +164,19 @@ module.exports = function(source, inputSourceMap) {
                         });
 
                     node.update(`[${res.join(',')}][0]`);
+                    modifiedNodes.push(node);
                 })
         );
     });
 
     Promise.all(allPromises)
-        .then(() => callback(null, result.toString(), inputSourceMap))
+        .then(() => {
+            const sourceMap = this.sourceMap ?
+                updateSourceMapOffsets.call(this, source, inputSourceMap, modifiedNodes) : undefined;
+            //if(inputSourceMap.file === 'AttributesButton.js') {
+            //    console.log('\n', source, '\n', result.toString(), '\n');
+            //}
+            callback(null, result.toString(), sourceMap);
+        })
         .catch(callback);
 };
